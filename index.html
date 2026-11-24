@@ -1,0 +1,3758 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#060d1f" />
+  <meta name="description" content="PantauKam - Aplikasi pemantauan dan pencatatan aktivitas orang secara otomatis menggunakan kamera." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>PantauKam — Smart People Monitoring</title>
+
+  <!-- Favicon SVG Inline (Tajam tanpa perlu folder assets terpisah) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23060d1f'/%3E%3Cg stroke='%2322d3ee' stroke-width='16' stroke-linecap='round' fill='none'%3E%3Cpath d='M96 164 V112 Q96 96 112 96 H164'/%3E%3Cpath d='M348 96 H400 Q416 96 416 112 V164'/%3E%3Cpath d='M416 348 V400 Q416 416 400 416 H348'/%3E%3Cpath d='M164 416 H112 Q96 416 96 400 V348'/%3E%3C/g%3E%3Ccircle cx='256' cy='256' r='130' fill='%230b1630' stroke='%232563eb' stroke-width='16'/%3E%3Ccircle cx='256' cy='256' r='104' fill='%2310254d'/%3E%3Ccircle cx='256' cy='224' r='24' fill='%23f8fafc'/%3E%3Cpath d='M210 302 C210 268 230 256 256 256 C282 256 302 268 302 302 Z' fill='%23f8fafc'/%3E%3Ccircle cx='332' cy='180' r='12' fill='%2322d3ee'/%3E%3C/svg%3E" />
+
+  <style>
+    :root {
+      --bg: #060d1f;
+      --bg-elevated: #0b1630;
+      --card: #101e3d;
+      --card-hover: #15264c;
+      --border: rgba(56, 189, 248, 0.16);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --primary: #2563eb;
+      --cyan: #22d3ee;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      --radius: 14px;
+    }
+
+    [data-theme="light"] {
+      --bg: #f1f5f9;
+      --bg-elevated: #ffffff;
+      --card: #ffffff;
+      --card-hover: #f8fafc;
+      --border: #cbd5e1;
+      --text: #0f172a;
+      --muted: #64748b;
+      --shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.45;
+    }
+
+    .hidden { display: none !important; }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      z-index: 40;
+      transition: transform 0.25s ease;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .brand-logo {
+      width: 195px;
+      height: auto;
+      display: block;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item:hover {
+      background: var(--card);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(34, 211, 238, 0.15));
+      border-color: rgba(34, 211, 238, 0.35);
+      color: var(--cyan);
+    }
+
+    .sidebar-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .net-pill {
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 8px;
+      background: rgba(34, 197, 94, 0.12);
+      color: var(--success);
+    }
+    .net-pill.offline {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+    }
+
+    .install-badge {
+      font-size: 0.78rem;
+      color: var(--success);
+      text-align: center;
+      font-weight: 600;
+    }
+
+    /* Main Area */
+    .main-wrapper {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    .topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar h1 { font-size: 1.25rem; }
+    .subtitle { font-size: 0.8rem; color: var(--muted); }
+
+    .topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-pill {
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+    .status-pill.active { color: var(--success); border-color: var(--success); }
+    .status-pill.blocked { color: var(--danger); border-color: var(--danger); }
+    .status-pill.inactive { color: var(--muted); }
+    .status-pill.requesting { color: var(--warning); border-color: var(--warning); }
+
+    .main-content {
+      padding: 20px 22px 40px;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .page {
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .page.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Cards & Grids */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+      transition: border-color 0.2s ease;
+    }
+
+    .card:hover { border-color: rgba(34, 211, 238, 0.3); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      gap: 10px;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .kpi-label { font-size: 0.82rem; color: var(--muted); font-weight: 600; }
+    .kpi-value { font-size: 1.85rem; font-weight: 800; margin: 6px 0; }
+    .kpi-status, .kpi-time { font-size: 1.25rem; }
+    .kpi-sub { font-size: 0.78rem; color: var(--muted); }
+    .text-cyan { color: var(--cyan); }
+    .text-blue { color: #60a5fa; }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .weekly-bars {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      align-items: end;
+      height: 170px;
+      padding-top: 18px;
+    }
+
+    .w-bar-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .w-bar-val { font-size: 0.75rem; font-weight: 700; color: var(--cyan); }
+    .w-bar-track {
+      width: 100%;
+      max-width: 36px;
+      height: 105px;
+      background: rgba(148, 163, 184, 0.12);
+      border-radius: 8px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .w-bar-fill {
+      width: 100%;
+      background: linear-gradient(180deg, var(--cyan), var(--primary));
+      border-radius: 8px;
+      transition: height 0.4s ease;
+    }
+    .w-bar-day { font-size: 0.75rem; color: var(--muted); }
+
+    /* Monitoring */
+    .monitoring-layout {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .camera-toolbar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .camera-select-group {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .mode-badge-group { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      background: rgba(148, 163, 184, 0.14);
+      border: 1px solid var(--border);
+    }
+    .badge-rec {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fca5a5;
+      border-color: var(--danger);
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+    .video-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #020617;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-container.motion-flash {
+      border-color: var(--danger);
+      box-shadow: 0 0 24px rgba(239, 68, 68, 0.45);
+    }
+
+    #videoFeed {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+
+    #overlayCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    #overlayCanvas.editing {
+      pointer-events: auto;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .video-placeholder {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+    }
+    .placeholder-icon { font-size: 2.5rem; margin-bottom: 8px; }
+
+    .video-hud {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .hud-pill {
+      background: rgba(6, 13, 31, 0.8);
+      color: #f8fafc;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #64748b; }
+    .dot.live { background: var(--success); animation: pulse 1.2s infinite; }
+    .dot.rec { background: var(--danger); animation: pulse 0.8s infinite; }
+
+    .camera-controls, .overlay-tools {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .hint-text { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+
+    .monitoring-side {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .counter-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .counter-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+    .counter-box span { display: block; font-size: 0.75rem; color: var(--muted); }
+    .counter-box strong { font-size: 1.45rem; }
+    .counter-box.in strong { color: var(--success); }
+    .counter-box.out strong { color: var(--warning); }
+    .counter-box.total strong { color: var(--cyan); }
+
+    .counter-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Forms & Buttons */
+    .btn {
+      padding: 9px 14px;
+      border-radius: 9px;
+      border: 1px solid transparent;
+      font-size: 0.86rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #ffffff;
+      background: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn:hover:not(:disabled) { opacity: 0.9; }
+    .btn:active:not(:disabled) { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-sm { padding: 6px 10px; font-size: 0.78rem; }
+    .btn-full { width: 100%; }
+    .btn-success { background: var(--success); }
+    .btn-danger { background: var(--danger); }
+    .btn-warning { background: var(--warning); color: #0f172a; }
+    .btn-secondary { background: #334155; }
+    .btn-cyan { background: linear-gradient(135deg, var(--primary), var(--cyan)); color: #061126; font-weight: 700; }
+    .btn-light { background: #ffffff; color: #0f172a; }
+    .btn-outline { background: transparent; border-color: var(--border); color: var(--text); }
+    .btn-outline-danger { background: transparent; border-color: rgba(239, 68, 68, 0.5); color: #fca5a5; }
+    [data-theme="light"] .btn-outline-danger { color: var(--danger); }
+
+    .icon-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: var(--danger);
+      color: white;
+      font-size: 0.68rem;
+      font-weight: 700;
+      min-width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    .input {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 11px;
+      border-radius: 8px;
+      font-size: 0.86rem;
+      width: 100%;
+    }
+
+    .form-stack { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+    .field { display: flex; flex-direction: column; gap: 5px; font-size: 0.84rem; }
+    .field > span { color: var(--muted); }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.86rem; gap: 10px; }
+    .inline-form { display: flex; gap: 8px; align-items: center; }
+    .muted-note { font-size: 0.76rem; color: var(--muted); }
+
+    /* Banners */
+    .banner {
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.86rem;
+    }
+    .banner-danger { background: rgba(239, 68, 68, 0.2); border-bottom: 1px solid var(--danger); }
+    .banner-info { background: rgba(34, 211, 238, 0.14); border-bottom: 1px solid var(--cyan); }
+    .alert-banner {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid var(--danger);
+      font-size: 0.84rem;
+    }
+
+    /* History & Logs */
+    .history-toolbar {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .history-actions-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+
+    .left-actions, .right-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .inline-check { width: auto; }
+
+    .history-list, .recent-list, .mini-log-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .log-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .log-thumb {
+      width: 84px;
+      height: 54px;
+      object-fit: cover;
+      border-radius: 7px;
+      background: #020617;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .log-meta { flex: 1; min-width: 0; }
+    .log-title { font-weight: 700; font-size: 0.92rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .log-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .tag {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: rgba(34, 211, 238, 0.15);
+      color: var(--cyan);
+    }
+    .tag.in { background: rgba(34, 197, 94, 0.18); color: var(--success); }
+    .tag.out { background: rgba(245, 158, 11, 0.18); color: var(--warning); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 26px 12px;
+      font-size: 0.88rem;
+    }
+
+    /* Statistics */
+    .stats-filter-card { margin-bottom: 16px; }
+    .stats-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .stats-filters > select, .stats-filters > input { max-width: 210px; }
+    .compare-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.84rem; color: var(--muted); }
+    .compare-group input { width: 150px; }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .chart-box { position: relative; height: 270px; margin-top: 10px; }
+
+    /* Calendar */
+    .calendar-layout {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 16px;
+    }
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .calendar-weekdays, .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+    .calendar-weekdays div {
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 700;
+      padding-bottom: 6px;
+    }
+    .cal-day {
+      min-height: 54px;
+      border-radius: 9px;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: var(--text);
+    }
+    .cal-day.empty { opacity: 0.25; cursor: default; }
+    .cal-day.selected { border-color: var(--cyan); background: rgba(34, 211, 238, 0.14); }
+    .cal-day-num { font-size: 0.82rem; font-weight: 700; }
+    .cal-badge {
+      align-self: flex-end;
+      font-size: 0.68rem;
+      padding: 1px 6px;
+      border-radius: 999px;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    /* Settings */
+    .settings-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .profile-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .profile-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      font-size: 0.84rem;
+    }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+    .backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .file-btn { cursor: pointer; }
+
+    /* Notifications & Toast & Modal */
+    .notif-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 340px;
+      max-width: 92vw;
+      height: 100vh;
+      background: var(--bg-elevated);
+      border-left: 1px solid var(--border);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+    }
+    .notif-drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .notif-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .notif-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      padding: 10px;
+      font-size: 0.82rem;
+    }
+
+    .toast-container {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 70;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 320px;
+    }
+    .toast {
+      background: var(--bg-elevated);
+      border: 1px solid var(--cyan);
+      border-left: 4px solid var(--cyan);
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      font-size: 0.84rem;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.75); }
+    .modal-box {
+      position: relative;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 560px;
+      width: 100%;
+      padding: 18px;
+      z-index: 1;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .modal-body { font-size: 0.9rem; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+    .mobile-only { display: none; }
+    .sidebar-backdrop { display: none; }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid, .monitoring-layout, .charts-grid, .calendar-layout, .settings-grid {
+        grid-template-columns: 1fr;
+      }
+      .history-toolbar { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .mobile-only { display: inline-flex; }
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        transform: translateX(-100%);
+      }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop.open {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 35;
+      }
+      .topbar { padding: 12px 14px; }
+      .main-content { padding: 14px 14px 36px; }
+      .history-toolbar { grid-template-columns: 1fr; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar Navigasi -->
+    <aside class="sidebar" id="sidebar" aria-label="Navigasi Utama">
+      <div class="sidebar-header">
+        <!-- Logo SVG Inline -->
+        <svg class="brand-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 180" aria-label="PantauKam Logo">
+          <defs>
+            <linearGradient id="bgLogo" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#081229"/>
+              <stop offset="100%" stop-color="#132a54"/>
+            </linearGradient>
+            <linearGradient id="accentLogo" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#2563eb"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+            <linearGradient id="glossLogo" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <g transform="translate(16, 16)">
+            <rect width="148" height="148" rx="34" fill="url(#bgLogo)" stroke="#1e3a8a" stroke-width="2"/>
+            <g stroke="#22d3ee" stroke-width="5" stroke-linecap="round" fill="none">
+              <path d="M26 48 V32 Q26 26 32 26 H48"/>
+              <path d="M100 26 H116 Q122 26 122 32 V48"/>
+              <path d="M122 100 V116 Q122 122 116 122 H100"/>
+              <path d="M48 122 H32 Q26 122 26 116 V100"/>
+            </g>
+            <circle cx="74" cy="74" r="40" fill="#09152e" stroke="url(#accentLogo)" stroke-width="5"/>
+            <circle cx="74" cy="74" r="32" fill="#10254d"/>
+            <circle cx="74" cy="64" r="7.5" fill="#ffffff"/>
+            <path d="M59 90 C59 79 66 74 74 74 C82 74 89 79 89 90 Z" fill="#ffffff"/>
+            <ellipse cx="63" cy="54" rx="15" ry="7" transform="rotate(-28 63 54)" fill="url(#glossLogo)"/>
+            <circle cx="97" cy="51" r="3.5" fill="#22d3ee"/>
+          </g>
+          <text x="188" y="88" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="56" font-weight="800" fill="currentColor" letter-spacing="-1">
+            Pantau<tspan fill="#22d3ee">Kam</tspan>
+          </text>
+          <text x="190" y="124" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#94a3b8" letter-spacing="3.5">
+            SMART PEOPLE MONITORING
+          </text>
+        </svg>
+        <button class="icon-btn mobile-only" id="btnCloseSidebar" aria-label="Tutup Menu">✕</button>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-page="dashboard">
+          <span class="nav-icon">📊</span><span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-page="monitoring">
+          <span class="nav-icon">📹</span><span>Monitoring Kamera</span>
+        </button>
+        <button class="nav-item" data-page="history">
+          <span class="nav-icon">📋</span><span>Riwayat Aktivitas</span>
+        </button>
+        <button class="nav-item" data-page="statistics">
+          <span class="nav-icon">📈</span><span>Statistik</span>
+        </button>
+        <button class="nav-item" data-page="calendar">
+          <span class="nav-icon">📅</span><span>Kalender Aktivitas</span>
+        </button>
+        <button class="nav-item" data-page="settings">
+          <span class="nav-icon">⚙️</span><span>Pengaturan</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="networkStatus" class="net-pill online">● Online</div>
+        <button id="btnInstallApp" class="btn btn-cyan btn-full hidden">📲 Install PantauKam</button>
+        <div id="installStatusBadge" class="install-badge hidden">✓ Terpasang sebagai Aplikasi</div>
+      </div>
+    </aside>
+
+    <!-- Backdrop Mobile Sidebar -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+    <!-- Konten Utama -->
+    <div class="main-wrapper">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-btn mobile-only" id="btnOpenSidebar" aria-label="Buka Menu">☰</button>
+          <div>
+            <h1 id="pageTitle">Dashboard</h1>
+            <p class="subtitle" id="pageSubtitle">Ringkasan pemantauan aktivitas terkini</p>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <span id="globalCamBadge" class="status-pill inactive">Kamera Tidak Aktif</span>
+          <button id="btnPrivacyQuick" class="btn btn-outline-danger btn-sm" title="Aktifkan/Nonaktifkan Mode Privasi">
+            🔒 Blokir Kamera
+          </button>
+          <button id="btnNotifPanel" class="icon-btn notif-btn" title="Notifikasi">
+            🔔<span class="notif-dot hidden" id="notifUnreadDot">0</span>
+          </button>
+        </div>
+      </header>
+
+      <div id="privacyBanner" class="banner banner-danger hidden">
+        <span>🔒 <strong>Mode Privasi Aktif:</strong> Kamera diblokir &amp; semua proses deteksi dihentikan.</span>
+        <button class="btn btn-sm btn-light" id="btnDisablePrivacyBanner">Buka Blokir</button>
+      </div>
+      <div id="swUpdateBanner" class="banner banner-info hidden">
+        <span>✨ Versi baru PantauKam tersedia.</span>
+        <button class="btn btn-sm btn-cyan" id="btnReloadUpdate">Perbarui Sekarang</button>
+      </div>
+
+      <main class="main-content">
+        <!-- 1. HALAMAN DASHBOARD -->
+        <section id="page-dashboard" class="page active">
+          <div class="kpi-grid">
+            <div class="card kpi-card">
+              <div class="kpi-label">Total Orang Hari Ini</div>
+              <div class="kpi-value text-cyan" id="kpiPeopleToday">0</div>
+              <div class="kpi-sub" id="kpiInOutToday">Masuk: 0 • Keluar: 0</div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">Total Deteksi Hari Ini</div>
+              <div class="kpi-value" id="kpiDetectionsToday">0</div>
+              <div class="kpi-sub">Gerakan, AI &amp; Catatan Manual</div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">Status Kamera</div>
+              <div class="kpi-value kpi-status" id="kpiCamStatus">Tidak Aktif</div>
+              <div class="kpi-sub" id="kpiCamProfile">Belum ada kamera aktif</div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">Jam Paling Ramai</div>
+              <div class="kpi-value text-blue" id="kpiPeakHour">--:--</div>
+              <div class="kpi-sub" id="kpiPeakCount">Belum ada data hari ini</div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">Aktivitas Terakhir</div>
+              <div class="kpi-value kpi-time" id="kpiLastActivity">--:--:--</div>
+              <div class="kpi-sub" id="kpiLastDesc">Menunggu aktivitas</div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header">
+                <h2>Ringkasan Mingguan (7 Hari Terakhir)</h2>
+                <button class="btn btn-sm btn-secondary" data-nav="statistics">Lihat Detail</button>
+              </div>
+              <div id="weeklySummaryBars" class="weekly-bars"></div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2>Aktivitas Terbaru</h2>
+                <button class="btn btn-sm btn-primary" data-nav="monitoring">Buka Kamera</button>
+              </div>
+              <div id="dashboardRecentList" class="recent-list">
+                <div class="empty-state">Belum ada aktivitas tercatat.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card info-card">
+            <p>
+              <strong>Transparansi &amp; Privasi:</strong> Semua pemrosesan gambar dan data riwayat disimpan secara lokal di perangkat Anda (IndexedDB). Tidak ada foto/video yang dikirim ke server luar. Pastikan Anda memiliki izin untuk memantau area yang dipilih.
+            </p>
+          </div>
+        </section>
+
+        <!-- 2. HALAMAN MONITORING KAMERA -->
+        <section id="page-monitoring" class="page">
+          <div class="monitoring-layout">
+            <div class="card camera-stage-card">
+              <div class="camera-toolbar-top">
+                <div class="camera-select-group">
+                  <select id="cameraSelect" class="input" aria-label="Pilih Perangkat Kamera">
+                    <option value="">Mendeteksi kamera...</option>
+                  </select>
+                  <button id="btnFlipCamera" class="btn btn-sm btn-secondary" title="Ganti Kamera Depan/Belakang">🔄 Putar</button>
+                </div>
+                <div class="mode-badge-group">
+                  <span id="aiStatusBadge" class="badge">AI: Nonaktif</span>
+                  <span id="recBadge" class="badge badge-rec hidden">● REC <span id="recTimer">00:00</span> (<span id="recSize">0 KB</span>)</span>
+                </div>
+              </div>
+
+              <div class="video-container" id="videoContainer">
+                <video id="videoFeed" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+
+                <div class="video-placeholder" id="videoPlaceholder">
+                  <div class="placeholder-icon">📹</div>
+                  <p id="placeholderMsg">Kamera sedang ditutup. Tekan <strong>Buka Kamera</strong> untuk mulai memantau.</p>
+                </div>
+
+                <div class="video-hud">
+                  <div class="hud-pill">
+                    <span class="dot" id="hudDot"></span>
+                    <span id="hudStatusText">OFFLINE</span>
+                  </div>
+                  <div class="hud-pill" id="hudClock">--:--:--</div>
+                </div>
+              </div>
+
+              <div id="cameraAlert" class="alert-banner hidden"></div>
+
+              <div class="camera-controls">
+                <button id="btnOpenCamera" class="btn btn-success">▶ Buka Kamera</button>
+                <button id="btnCloseCamera" class="btn btn-danger" disabled>⏹ Tutup Kamera</button>
+                <button id="btnRecordVideo" class="btn btn-warning" disabled>⏺ Rekam Video</button>
+                <button id="btnManualLog" class="btn btn-primary" disabled>📸 Catat &amp; Foto Sekarang</button>
+              </div>
+
+              <div class="overlay-tools">
+                <button id="btnEditROI" class="btn btn-sm btn-secondary">📐 Atur Area Deteksi</button>
+                <button id="btnResetROI" class="btn btn-sm btn-outline">Reset Area</button>
+                <button id="btnEditLine" class="btn btn-sm btn-secondary">➖ Atur Garis Hitung</button>
+                <button id="btnSwapDirection" class="btn btn-sm btn-outline">⇄ Tukar Arah Masuk/Keluar</button>
+              </div>
+              <p class="hint-text" id="editorHint">Tip: Gunakan mode <strong>AI</strong> atau <strong>Hybrid</strong> untuk penghitungan orang melintasi garis.</p>
+            </div>
+
+            <div class="monitoring-side">
+              <div class="card">
+                <h3>Penghitung Orang (Sesi / Hari Ini)</h3>
+                <div class="counter-grid">
+                  <div class="counter-box in">
+                    <span>Masuk</span>
+                    <strong id="liveCountIn">0</strong>
+                  </div>
+                  <div class="counter-box out">
+                    <span>Keluar</span>
+                    <strong id="liveCountOut">0</strong>
+                  </div>
+                  <div class="counter-box total">
+                    <span>Total Lewat</span>
+                    <strong id="liveCountTotal">0</strong>
+                  </div>
+                </div>
+                <div class="counter-actions">
+                  <small class="muted-note">Deteksi AI bersifat estimasi visual dan akurasinya bergantung pada pencahayaan serta sudut kamera.</small>
+                  <button id="btnResetStats" class="btn btn-sm btn-outline-danger">Reset Statistik Hitungan</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Kontrol Deteksi Cepat</h3>
+                <div class="form-stack">
+                  <label class="field">
+                    <span>Mode Deteksi</span>
+                    <select id="quickDetectionMode" class="input">
+                      <option value="motion">Deteksi Gerakan (Offline/Ringan)</option>
+                      <option value="ai">Deteksi Orang AI (COCO-SSD)</option>
+                      <option value="hybrid">Hybrid (Gerakan + AI)</option>
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Sensitivitas Gerakan (<strong id="quickSensVal">25</strong>)</span>
+                    <input type="range" id="quickSensitivity" min="5" max="60" value="25" />
+                  </label>
+
+                  <label class="toggle-row">
+                    <span>Aktifkan Area Deteksi (ROI)</span>
+                    <input type="checkbox" id="quickRoiEnabled" />
+                  </label>
+                  <label class="toggle-row">
+                    <span>Aktifkan Garis Penghitung</span>
+                    <input type="checkbox" id="quickLineEnabled" checked />
+                  </label>
+                  <label class="toggle-row">
+                    <span>Suara Alarm (Beep)</span>
+                    <input type="checkbox" id="quickSoundEnabled" checked />
+                  </label>
+                  <label class="toggle-row">
+                    <span>Foto Otomatis Saat Terdeteksi</span>
+                    <input type="checkbox" id="quickAutoPhoto" checked />
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3>Catatan Sesi Terbaru</h3>
+                  <button class="btn btn-sm btn-secondary" data-nav="history">Semua</button>
+                </div>
+                <div id="monitoringMiniLogs" class="mini-log-list">
+                  <div class="empty-state">Belum ada catatan.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. HALAMAN RIWAYAT AKTIVITAS -->
+        <section id="page-history" class="page">
+          <div class="card">
+            <div class="history-toolbar">
+              <input type="search" id="historySearch" class="input" placeholder="Cari keterangan, tanggal, kamera..." />
+              <input type="date" id="historyDateFilter" class="input" aria-label="Filter Tanggal" />
+              <select id="historyTypeFilter" class="input" aria-label="Filter Jenis Deteksi">
+                <option value="all">Semua Jenis</option>
+                <option value="ai">Deteksi AI</option>
+                <option value="motion">Deteksi Gerakan</option>
+                <option value="counting">Lintasan Garis</option>
+                <option value="manual">Catat Manual</option>
+              </select>
+              <select id="historySort" class="input" aria-label="Urutkan">
+                <option value="newest">Terbaru</option>
+                <option value="oldest">Terlama</option>
+              </select>
+            </div>
+
+            <div class="history-actions-bar">
+              <div class="left-actions">
+                <label class="toggle-row inline-check">
+                  <input type="checkbox" id="selectAllLogs" />
+                  <span>Pilih Semua</span>
+                </label>
+                <button id="btnDeleteSelected" class="btn btn-sm btn-danger" disabled>🗑 Hapus Terpilih (<span id="selectedCount">0</span>)</button>
+              </div>
+              <div class="right-actions">
+                <button id="btnExportCSV" class="btn btn-sm btn-secondary">⬇ Export CSV</button>
+                <button id="btnClearAllHistory" class="btn btn-sm btn-outline-danger">Hapus Semua Riwayat</button>
+              </div>
+            </div>
+
+            <div id="historyTimeline" class="history-list">
+              <div class="empty-state">Belum ada riwayat aktivitas.</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. HALAMAN STATISTIK -->
+        <section id="page-statistics" class="page">
+          <div class="card stats-filter-card">
+            <div class="stats-filters">
+              <select id="statsRangePreset" class="input">
+                <option value="today">Hari Ini</option>
+                <option value="yesterday">Kemarin</option>
+                <option value="7days">7 Hari Terakhir</option>
+                <option value="30days">30 Hari Terakhir</option>
+                <option value="thisMonth">Bulan Ini</option>
+                <option value="custom">Pilih Tanggal Sendiri</option>
+              </select>
+              <input type="date" id="statsCustomDate" class="input hidden" />
+              <div class="compare-group">
+                <span>Bandingkan:</span>
+                <input type="date" id="compareDateA" class="input" title="Tanggal A" />
+                <span>vs</span>
+                <input type="date" id="compareDateB" class="input" title="Tanggal B" />
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-grid stats-summary-grid">
+            <div class="card kpi-card"><div class="kpi-label">Jam Paling Ramai</div><div class="kpi-value text-cyan" id="statPeakHour">--:--</div></div>
+            <div class="card kpi-card"><div class="kpi-label">Jam Paling Sepi</div><div class="kpi-value" id="statQuietHour">--:--</div></div>
+            <div class="card kpi-card"><div class="kpi-label">Hari Paling Ramai</div><div class="kpi-value text-blue" id="statBusiestDay">-</div></div>
+            <div class="card kpi-card"><div class="kpi-label">Total Masuk / Keluar</div><div class="kpi-value" id="statInOut">0 / 0</div></div>
+            <div class="card kpi-card"><div class="kpi-label">Rata-Rata / Hari</div><div class="kpi-value" id="statAvgPerDay">0</div></div>
+          </div>
+
+          <div id="chartsOfflineNotice" class="banner banner-info hidden">
+            Grafik Chart.js membutuhkan koneksi internet pada kunjungan pertama agar dapat dimuat.
+          </div>
+
+          <div class="charts-grid">
+            <div class="card chart-card">
+              <h3>Aktivitas Per Jam (00:00 – 23:00)</h3>
+              <div class="chart-box"><canvas id="chartHourly"></canvas></div>
+            </div>
+            <div class="card chart-card">
+              <h3>Aktivitas Harian (7 Hari Terakhir)</h3>
+              <div class="chart-box"><canvas id="chartDaily"></canvas></div>
+            </div>
+            <div class="card chart-card">
+              <h3>Aktivitas Bulanan (30 Hari)</h3>
+              <div class="chart-box"><canvas id="chartMonthly"></canvas></div>
+            </div>
+            <div class="card chart-card">
+              <h3>Perbandingan Dua Tanggal</h3>
+              <div class="chart-box"><canvas id="chartCompare"></canvas></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. HALAMAN KALENDER AKTIVITAS -->
+        <section id="page-calendar" class="page">
+          <div class="calendar-layout">
+            <div class="card">
+              <div class="calendar-header">
+                <button id="btnPrevMonth" class="btn btn-sm btn-secondary">◀</button>
+                <h2 id="calendarMonthTitle">Bulan Tahun</h2>
+                <button id="btnNextMonth" class="btn btn-sm btn-secondary">▶</button>
+              </div>
+              <div class="calendar-weekdays">
+                <div>Min</div><div>Sen</div><div>Sel</div><div>Rab</div><div>Kam</div><div>Jum</div><div>Sab</div>
+              </div>
+              <div id="calendarGrid" class="calendar-grid"></div>
+            </div>
+
+            <div class="card">
+              <h3 id="calendarSelectedTitle">Pilih Tanggal</h3>
+              <div id="calendarDayEvents" class="history-list compact">
+                <div class="empty-state">Pilih tanggal bertanda di kalender untuk melihat aktivitas.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. HALAMAN PENGATURAN -->
+        <section id="page-settings" class="page">
+          <div class="settings-grid">
+            <div class="card">
+              <h3>Deteksi &amp; Kamera</h3>
+              <div class="form-stack">
+                <label class="field">
+                  <span>Mode Deteksi Utama</span>
+                  <select id="setDetectionMode" class="input">
+                    <option value="motion">Deteksi Gerakan (Piksel)</option>
+                    <option value="ai">Deteksi Orang (AI COCO-SSD)</option>
+                    <option value="hybrid">Hybrid (Gerakan + AI)</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Sensitivitas Gerakan (<strong id="setSensVal">25</strong>)</span>
+                  <input type="range" id="setSensitivity" min="5" max="60" value="25" />
+                </label>
+                <label class="field">
+                  <span>Kualitas Kamera</span>
+                  <select id="setCameraQuality" class="input">
+                    <option value="low">Rendah (640x360 - Hemat Baterai)</option>
+                    <option value="medium">Sedang (1280x720 - Standar)</option>
+                    <option value="high">Tinggi (1920x1080 - Tajam)</option>
+                  </select>
+                </label>
+                <label class="toggle-row">
+                  <span>Pengambilan Foto Otomatis</span>
+                  <input type="checkbox" id="setAutoPhoto" checked />
+                </label>
+                <label class="toggle-row">
+                  <span>Aktifkan Area Deteksi (ROI)</span>
+                  <input type="checkbox" id="setRoiEnabled" />
+                </label>
+                <label class="toggle-row">
+                  <span>Aktifkan Garis Penghitung</span>
+                  <input type="checkbox" id="setLineEnabled" checked />
+                </label>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Profil Kamera Tersimpan</h3>
+              <div class="form-stack">
+                <label class="field">
+                  <span>Beri Nama Kamera Aktif</span>
+                  <div class="inline-form">
+                    <input type="text" id="profileNameInput" class="input" placeholder="Contoh: Kamera Pintu Masuk" />
+                    <button id="btnSaveCameraProfile" class="btn btn-primary btn-sm">Simpan</button>
+                  </div>
+                </label>
+                <div id="cameraProfilesList" class="profile-list"></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Alarm, Notifikasi &amp; Jadwal</h3>
+              <div class="form-stack">
+                <label class="toggle-row">
+                  <span>Suara Alarm / Notifikasi</span>
+                  <input type="checkbox" id="setSoundEnabled" checked />
+                </label>
+                <label class="field">
+                  <span>Volume Alarm (<strong id="setVolVal">40</strong>%)</span>
+                  <input type="range" id="setVolume" min="0" max="100" value="40" />
+                </label>
+                <label class="toggle-row">
+                  <span>Notifikasi Dalam Aplikasi</span>
+                  <input type="checkbox" id="setInAppNotif" checked />
+                </label>
+                <div class="field">
+                  <span>Notifikasi Browser</span>
+                  <button id="btnRequestBrowserNotif" class="btn btn-sm btn-secondary">Aktifkan Izin Notifikasi Browser</button>
+                  <small id="browserNotifStatus" class="muted-note">Status: Belum diminta</small>
+                </div>
+                <label class="toggle-row">
+                  <span>Aktifkan Jadwal Pemantauan</span>
+                  <input type="checkbox" id="setScheduleEnabled" />
+                </label>
+                <div class="inline-form">
+                  <label class="field"><span>Mulai</span><input type="time" id="setScheduleStart" class="input" value="06:00" /></label>
+                  <label class="field"><span>Selesai</span><input type="time" id="setScheduleEnd" class="input" value="22:00" /></label>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Tampilan, Privasi &amp; Penyimpanan Data</h3>
+              <div class="form-stack">
+                <label class="field">
+                  <span>Tema Aplikasi</span>
+                  <select id="setTheme" class="input">
+                    <option value="dark">Dark Mode (Navy Futuristik)</option>
+                    <option value="light">Light Mode (Terang)</option>
+                  </select>
+                </label>
+                <label class="field">
+                  <span>Durasi Simpan Riwayat</span>
+                  <select id="setRetentionDays" class="input">
+                    <option value="0">Simpan Selamanya (Manual Hapus)</option>
+                    <option value="7">7 Hari Terakhir</option>
+                    <option value="30">30 Hari Terakhir</option>
+                    <option value="90">90 Hari Terakhir</option>
+                  </select>
+                </label>
+                <label class="toggle-row">
+                  <span>Mode Privasi (Blokir Kamera)</span>
+                  <input type="checkbox" id="setPrivacyMode" />
+                </label>
+
+                <hr class="divider" />
+                <div class="backup-actions">
+                  <button id="btnBackupJSON" class="btn btn-primary btn-sm">💾 Backup JSON</button>
+                  <label class="btn btn-secondary btn-sm file-btn">
+                    📂 Restore JSON
+                    <input type="file" id="inputRestoreJSON" accept=".json,application/json" hidden />
+                  </label>
+                  <button id="btnExportCSVSettings" class="btn btn-secondary btn-sm">⬇ Export CSV</button>
+                </div>
+                <button id="btnShowInstallGuide" class="btn btn-cyan btn-sm">📲 Panduan Pasang Aplikasi (PWA)</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 16px;">
+            <h3>Rekaman Video Tersimpan</h3>
+            <div id="savedRecordingsList" class="profile-list">
+              <div class="empty-state">Belum ada rekaman video tersimpan di IndexedDB.</div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Drawer Panel Notifikasi -->
+  <aside id="notifDrawer" class="notif-drawer hidden">
+    <div class="notif-drawer-header">
+      <h3>Riwayat Notifikasi</h3>
+      <div>
+        <button id="btnClearNotifs" class="btn btn-sm btn-outline">Bersihkan</button>
+        <button id="btnCloseNotifDrawer" class="icon-btn">✕</button>
+      </div>
+    </div>
+    <div id="notifHistoryList" class="notif-list">
+      <div class="empty-state">Belum ada notifikasi.</div>
+    </div>
+  </aside>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Modal Universal -->
+  <div id="appModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Judul Modal</h3>
+        <button id="modalCloseBtn" class="icon-btn">✕</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div id="modalFooter" class="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Canvas tersembunyi -->
+  <canvas id="motionCanvas" width="64" height="48" class="hidden"></canvas>
+  <canvas id="snapCanvas" class="hidden"></canvas>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ==================== 1. DATABASE (IndexedDB + Migrasi + Backup) ====================
+    const DB_NAME = 'PantauKamDB';
+    const DB_VERSION = 1;
+    const SETTINGS_KEY = 'pantaukam_settings_v2';
+    const LEGACY_LOGS_KEY = 'pantaukam_logs';
+    const MIGRATED_FLAG = 'pantaukam_migrated_v1';
+
+    const DEFAULT_SETTINGS = {
+      detectionMode: 'motion',
+      sensitivity: 25,
+      cameraQuality: 'medium',
+      autoPhoto: true,
+      soundEnabled: true,
+      volume: 40,
+      inAppNotif: true,
+      scheduleEnabled: false,
+      scheduleStart: '06:00',
+      scheduleEnd: '22:00',
+      theme: 'dark',
+      retentionDays: 0,
+      privacyMode: false,
+      lastCameraId: '',
+      roiEnabled: false,
+      roi: { x: 0.15, y: 0.15, w: 0.7, h: 0.7 },
+      lineEnabled: true,
+      countingLine: { x1: 0.1, y1: 0.55, x2: 0.9, y2: 0.55, swapDirection: false }
+    };
+
+    let dbInstance = null;
+
+    function openDatabase() {
+      if (dbInstance) return Promise.resolve(dbInstance);
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains('logs')) {
+            const logStore = db.createObjectStore('logs', { keyPath: 'id' });
+            logStore.createIndex('timestamp', 'timestamp', { unique: false });
+            logStore.createIndex('dateKey', 'dateKey', { unique: false });
+          }
+          if (!db.objectStoreNames.contains('profiles')) {
+            db.createObjectStore('profiles', { keyPath: 'deviceId' });
+          }
+          if (!db.objectStoreNames.contains('notifications')) {
+            db.createObjectStore('notifications', { keyPath: 'id' });
+          }
+          if (!db.objectStoreNames.contains('recordings')) {
+            db.createObjectStore('recordings', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = () => {
+          dbInstance = req.result;
+          resolve(dbInstance);
+        };
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function withStore(storeName, mode, callback) {
+      return openDatabase().then(
+        (db) =>
+          new Promise((resolve, reject) => {
+            const tx = db.transaction(storeName, mode);
+            const store = tx.objectStore(storeName);
+            const result = callback(store, tx);
+            tx.oncomplete = () => resolve(result?._result ?? result);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error('Transaksi dibatalkan'));
+          })
+      );
+    }
+
+    function getDateKey(ts = Date.now()) {
+      const d = new Date(ts);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    async function migrateLegacyLogsIfNeeded() {
+      if (localStorage.getItem(MIGRATED_FLAG) === 'true') return { migrated: 0 };
+      const raw = localStorage.getItem(LEGACY_LOGS_KEY);
+      if (!raw) {
+        localStorage.setItem(MIGRATED_FLAG, 'true');
+        return { migrated: 0 };
+      }
+
+      let legacyItems = [];
+      try {
+        legacyItems = JSON.parse(raw);
+        if (!Array.isArray(legacyItems)) legacyItems = [];
+      } catch {
+        return { migrated: 0 };
+      }
+      if (legacyItems.length === 0) {
+        localStorage.setItem(MIGRATED_FLAG, 'true');
+        return { migrated: 0 };
+      }
+
+      const existing = await getAllLogs();
+      const existingIds = new Set(existing.map((l) => String(l.id)));
+
+      let added = 0;
+      for (const item of legacyItems) {
+        const id = item.id ?? Date.now() + added;
+        if (existingIds.has(String(id))) continue;
+        const ts = typeof id === 'number' && id > 1000000000000 ? id : Date.now();
+        await saveLog({
+          id,
+          timestamp: ts,
+          dateKey: getDateKey(ts),
+          time: item.time || new Date(ts).toLocaleTimeString('id-ID', { hour12: false }),
+          date: item.date || new Date(ts).toLocaleDateString('id-ID'),
+          desc: item.desc || 'Catatan Lama',
+          type: (item.desc || '').toLowerCase().includes('manual') ? 'manual' : 'motion',
+          direction: null,
+          cameraName: 'Kamera Utama (Lama)',
+          image: item.image || ''
+        });
+        added++;
+      }
+
+      const verifiedLogs = await getAllLogs();
+      if (verifiedLogs.length >= existing.length + added) {
+        localStorage.setItem(MIGRATED_FLAG, 'true');
+      }
+      return { migrated: added };
+    }
+
+    function getSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+        return {
+          ...DEFAULT_SETTINGS,
+          ...saved,
+          roi: { ...DEFAULT_SETTINGS.roi, ...(saved.roi || {}) },
+          countingLine: { ...DEFAULT_SETTINGS.countingLine, ...(saved.countingLine || {}) }
+        };
+      } catch {
+        return { ...DEFAULT_SETTINGS };
+      }
+    }
+
+    function saveSettings(s) {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    }
+
+    async function saveLog(entry) {
+      try {
+        await withStore('logs', 'readwrite', (store) => store.put(entry));
+      } catch (err) {
+        if (err && err.name === 'QuotaExceededError') {
+          throw new Error('Penyimpanan perangkat hampir penuh. Hapus riwayat lama atau backup data.');
+        }
+        throw err;
+      }
+    }
+
+    function getAllLogs() {
+      return openDatabase().then(
+        (db) =>
+          new Promise((resolve, reject) => {
+            const req = db.transaction('logs', 'readonly').objectStore('logs').getAll();
+            req.onsuccess = () => {
+              const list = req.result || [];
+              list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+              resolve(list);
+            };
+            req.onerror = () => reject(req.error);
+          })
+      );
+    }
+
+    function deleteLogById(id) {
+      return withStore('logs', 'readwrite', (store) => store.delete(id));
+    }
+
+    function deleteLogsByIds(ids) {
+      return withStore('logs', 'readwrite', (store) => {
+        ids.forEach((id) => store.delete(id));
+      });
+    }
+
+    function clearAllLogs() {
+      return withStore('logs', 'readwrite', (store) => store.clear());
+    }
+
+    async function pruneOldLogs(days) {
+      if (!days || days <= 0) return 0;
+      const cutoff = Date.now() - days * 86400000;
+      const all = await getAllLogs();
+      const toDelete = all.filter((l) => (l.timestamp || 0) < cutoff).map((l) => l.id);
+      if (toDelete.length > 0) await deleteLogsByIds(toDelete);
+      return toDelete.length;
+    }
+
+    function getCameraProfiles() {
+      return openDatabase().then(
+        (db) =>
+          new Promise((resolve, reject) => {
+            const req = db.transaction('profiles', 'readonly').objectStore('profiles').getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+          })
+      );
+    }
+
+    function saveCameraProfile(profile) {
+      return withStore('profiles', 'readwrite', (store) => store.put(profile));
+    }
+
+    function saveNotification(notif) {
+      return withStore('notifications', 'readwrite', (store) => store.put(notif));
+    }
+
+    function getNotifications() {
+      return openDatabase().then(
+        (db) =>
+          new Promise((resolve, reject) => {
+            const req = db.transaction('notifications', 'readonly').objectStore('notifications').getAll();
+            req.onsuccess = () => {
+              const list = req.result || [];
+              list.sort((a, b) => b.timestamp - a.timestamp);
+              resolve(list.slice(0, 60));
+            };
+            req.onerror = () => reject(req.error);
+          })
+      );
+    }
+
+    function clearNotifications() {
+      return withStore('notifications', 'readwrite', (store) => store.clear());
+    }
+
+    function saveRecording(rec) {
+      return withStore('recordings', 'readwrite', (store) => store.put(rec));
+    }
+
+    function getRecordings() {
+      return openDatabase().then(
+        (db) =>
+          new Promise((resolve, reject) => {
+            const req = db.transaction('recordings', 'readonly').objectStore('recordings').getAll();
+            req.onsuccess = () => {
+              const list = req.result || [];
+              list.sort((a, b) => b.timestamp - a.timestamp);
+              resolve(list);
+            };
+            req.onerror = () => reject(req.error);
+          })
+      );
+    }
+
+    function deleteRecording(id) {
+      return withStore('recordings', 'readwrite', (store) => store.delete(id));
+    }
+
+    function exportLogsToCSV(logs) {
+      if (!logs || logs.length === 0) return false;
+      let csv = 'ID,Tanggal,Jam,Jenis,Arah,Kamera,Keterangan\n';
+      logs.forEach((l) => {
+        const row = [
+          l.id,
+          l.date || l.dateKey || '',
+          l.time || '',
+          l.type || 'motion',
+          l.direction || '-',
+          l.cameraName || '-',
+          (l.desc || '').replace(/"/g, '""')
+        ];
+        csv += row.map((v) => `"${v}"`).join(',') + '\n';
+      });
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pantaukam-riwayat-${getDateKey()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      return true;
+    }
+
+    async function exportBackupJSON() {
+      const [logs, profiles] = await Promise.all([getAllLogs(), getCameraProfiles()]);
+      const payload = {
+        app: 'PantauKam',
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        settings: getSettings(),
+        profiles,
+        logs
+      };
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pantaukam-backup-${getDateKey()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    async function importBackupJSON(file) {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data || !Array.isArray(data.logs)) throw new Error('File backup JSON tidak valid.');
+
+      const existing = await getAllLogs();
+      const existingIds = new Set(existing.map((l) => String(l.id)));
+
+      let importedCount = 0;
+      for (const item of data.logs) {
+        if (!item.id || existingIds.has(String(item.id))) continue;
+        await saveLog({
+          ...item,
+          timestamp: item.timestamp || Date.now(),
+          dateKey: item.dateKey || getDateKey(item.timestamp || Date.now())
+        });
+        importedCount++;
+      }
+
+      if (Array.isArray(data.profiles)) {
+        for (const p of data.profiles) {
+          if (p.deviceId) await saveCameraProfile(p);
+        }
+      }
+
+      if (data.settings) {
+        saveSettings({ ...getSettings(), ...data.settings });
+      }
+      return importedCount;
+    }
+
+    // ==================== 2. NOTIFIKASI & ALARM ====================
+    let audioCtx = null;
+
+    function playAlarmBeep(volumePercent = 40, frequency = 880) {
+      try {
+        const vol = Math.max(0, Math.min(1, volumePercent / 100));
+        if (vol === 0) return;
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol * 0.35, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.22);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.23);
+      } catch {}
+    }
+
+    function showToast(message, title = 'PantauKam') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<strong>${title}</strong><div style="margin-top:2px;color:var(--muted)">${message}</div>`;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+
+    async function pushActivityNotification({ title, time, type, cameraName, inAppEnabled = true }) {
+      await saveNotification({
+        id: Date.now() + Math.floor(Math.random() * 1000),
+        timestamp: Date.now(),
+        title,
+        time,
+        type,
+        cameraName
+      });
+
+      if (inAppEnabled) showToast(`${time} • ${type} (${cameraName})`, title);
+
+      if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+        try {
+          new Notification(title, { body: `Jam ${time} • ${type} • ${cameraName}` });
+        } catch {}
+      }
+      await refreshNotificationUI();
+    }
+
+    async function refreshNotificationUI() {
+      const listEl = document.getElementById('notifHistoryList');
+      const dotEl = document.getElementById('notifUnreadDot');
+      if (!listEl) return;
+
+      const items = await getNotifications();
+      if (dotEl) {
+        dotEl.innerText = items.length > 99 ? '99+' : String(items.length);
+        dotEl.classList.toggle('hidden', items.length === 0);
+      }
+
+      if (items.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Belum ada notifikasi.</div>';
+        return;
+      }
+
+      listEl.innerHTML = items
+        .map(
+          (n) => `
+          <div class="notif-item">
+            <strong>${n.title}</strong>
+            <div style="color:var(--muted);margin-top:3px;">⏰ ${n.time} • ${n.type}</div>
+            <div style="color:var(--cyan);font-size:0.75rem;">📹 ${n.cameraName}</div>
+          </div>`
+        )
+        .join('');
+    }
+
+    async function clearAllNotifs() {
+      await clearNotifications();
+      await refreshNotificationUI();
+    }
+
+    async function requestBrowserNotificationPermission() {
+      if (!('Notification' in window)) return 'unsupported';
+      return await Notification.requestPermission();
+    }
+
+    // ==================== 3. KAMERA & REKAM VIDEO ====================
+    class CameraManager {
+      constructor({ videoEl, onStatusChange, onRecordUpdate, onError }) {
+        this.videoEl = videoEl;
+        this.onStatusChange = onStatusChange;
+        this.onRecordUpdate = onRecordUpdate;
+        this.onError = onError;
+
+        this.stream = null;
+        this.status = 'inactive';
+        this.activeDeviceId = '';
+        this.facingMode = 'environment';
+
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+        this.isRecording = false;
+        this.recordStartTime = 0;
+        this.recordTimer = null;
+        this.recordedBytes = 0;
+      }
+
+      setStatus(newStatus) {
+        this.status = newStatus;
+        this.onStatusChange?.(newStatus);
+      }
+
+      async checkBrowserPermission() {
+        if (!navigator.permissions?.query) return 'prompt';
+        try {
+          const res = await navigator.permissions.query({ name: 'camera' });
+          if (res.state === 'denied') this.setStatus('blocked');
+          return res.state;
+        } catch {
+          return 'prompt';
+        }
+      }
+
+      async listDevices() {
+        if (!navigator.mediaDevices?.enumerateDevices) return [];
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        return devices.filter((d) => d.kind === 'videoinput');
+      }
+
+      getResolutionConstraints(quality) {
+        if (quality === 'low') return { width: { ideal: 640 }, height: { ideal: 360 } };
+        if (quality === 'high') return { width: { ideal: 1920 }, height: { ideal: 1080 } };
+        return { width: { ideal: 1280 }, height: { ideal: 720 } };
+      }
+
+      async open({ deviceId = '', quality = 'medium', privacyBlocked = false } = {}) {
+        if (privacyBlocked) {
+          this.setStatus('blocked');
+          return false;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          this.onError?.('Browser tidak mendukung akses kamera atau halaman tidak dibuka melalui HTTPS / localhost.');
+          return false;
+        }
+
+        await this.close();
+        this.setStatus('requesting');
+        const resConstraints = this.getResolutionConstraints(quality);
+        const videoConstraints = deviceId
+          ? { deviceId: { exact: deviceId }, ...resConstraints }
+          : { facingMode: this.facingMode, ...resConstraints };
+
+        try {
+          this.stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+          const videoTrack = this.stream.getVideoTracks()[0];
+          if (videoTrack) {
+            this.activeDeviceId = videoTrack.getSettings()?.deviceId || deviceId;
+            videoTrack.onended = () => {
+              if (this.stream) {
+                this.close();
+                this.setStatus('disconnected');
+                this.onError?.('Koneksi kamera terputus.');
+              }
+            };
+          }
+          this.videoEl.srcObject = this.stream;
+          await this.videoEl.play();
+          this.setStatus('active');
+          return true;
+        } catch (err) {
+          if (deviceId && err.name === 'OverconstrainedError') {
+            return this.open({ deviceId: '', quality, privacyBlocked });
+          }
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            this.setStatus('blocked');
+            this.onError?.('Izin kamera ditolak/diblokir oleh browser. Klik ikon gembok di bilah alamat browser untuk mengizinkannya.');
+          } else if (err.name === 'NotFoundError') {
+            this.setStatus('disconnected');
+            this.onError?.('Kamera tidak ditemukan pada perangkat ini.');
+          } else {
+            this.setStatus('inactive');
+            this.onError?.(`Gagal membuka kamera: ${err.message}`);
+          }
+          return false;
+        }
+      }
+
+      async close(targetStatus = 'inactive') {
+        if (this.isRecording) await this.stopRecording();
+        if (this.stream) {
+          this.stream.getTracks().forEach((t) => t.stop());
+          this.stream = null;
+        }
+        this.videoEl.srcObject = null;
+        this.setStatus(targetStatus);
+      }
+
+      async flipCamera(quality) {
+        this.facingMode = this.facingMode === 'environment' ? 'user' : 'environment';
+        return this.open({ deviceId: '', quality });
+      }
+
+      startRecording(cameraName = 'Kamera') {
+        if (!this.stream || this.isRecording) return false;
+        this.recordedChunks = [];
+        this.recordedBytes = 0;
+
+        const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+          ? 'video/webm;codecs=vp9'
+          : MediaRecorder.isTypeSupported('video/webm')
+          ? 'video/webm'
+          : '';
+
+        this.mediaRecorder = mimeType ? new MediaRecorder(this.stream, { mimeType }) : new MediaRecorder(this.stream);
+        this.mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            this.recordedChunks.push(e.data);
+            this.recordedBytes += e.data.size;
+          }
+        };
+
+        this.recordStartTime = Date.now();
+        this.isRecording = true;
+        this.mediaRecorder.start(1000);
+
+        this.recordTimer = setInterval(() => {
+          const elapsedSec = Math.floor((Date.now() - this.recordStartTime) / 1000);
+          this.onRecordUpdate?.({ isRecording: true, elapsedSec, bytes: this.recordedBytes });
+        }, 500);
+
+        this.onRecordUpdate?.({ isRecording: true, elapsedSec: 0, bytes: 0, cameraName });
+        return true;
+      }
+
+      stopRecording() {
+        if (!this.isRecording || !this.mediaRecorder) return Promise.resolve(null);
+        return new Promise((resolve) => {
+          clearInterval(this.recordTimer);
+          this.recordTimer = null;
+
+          this.mediaRecorder.onstop = async () => {
+            const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+            const now = new Date();
+            const stamp =
+              now.getFullYear() +
+              String(now.getMonth() + 1).padStart(2, '0') +
+              String(now.getDate()).padStart(2, '0') +
+              '-' +
+              String(now.getHours()).padStart(2, '0') +
+              String(now.getMinutes()).padStart(2, '0') +
+              String(now.getSeconds()).padStart(2, '0');
+            const fileName = `PantauKam-${stamp}.webm`;
+            const durationSec = Math.floor((Date.now() - this.recordStartTime) / 1000);
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+            if (blob.size < 50 * 1024 * 1024) {
+              try {
+                await saveRecording({ id: Date.now(), timestamp: Date.now(), fileName, durationSec, size: blob.size, blob });
+              } catch {}
+            }
+
+            this.isRecording = false;
+            this.mediaRecorder = null;
+            this.onRecordUpdate?.({ isRecording: false, elapsedSec: 0, bytes: 0 });
+            resolve({ fileName, size: blob.size, durationSec });
+          };
+          this.mediaRecorder.stop();
+        });
+      }
+    }
+
+    // ==================== 4. DETEKSI GERAKAN ====================
+    class MotionDetector {
+      constructor(canvasEl) {
+        this.canvas = canvasEl;
+        this.ctx = canvasEl.getContext('2d', { willReadFrequently: true });
+        this.prevFrame = null;
+        this.lastTriggeredAt = 0;
+      }
+
+      reset() {
+        this.prevFrame = null;
+      }
+
+      detect(videoEl, { sensitivity = 25, roiEnabled = false, roi = null, cooldownMs = 3500 } = {}) {
+        if (!videoEl || videoEl.readyState < 2) return { detected: false, percent: 0 };
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        this.ctx.drawImage(videoEl, 0, 0, w, h);
+        const current = this.ctx.getImageData(0, 0, w, h).data;
+
+        if (!this.prevFrame) {
+          this.prevFrame = new Uint8ClampedArray(current);
+          return { detected: false, percent: 0 };
+        }
+
+        const minX = roiEnabled && roi ? Math.floor(roi.x * w) : 0;
+        const maxX = roiEnabled && roi ? Math.ceil((roi.x + roi.w) * w) : w;
+        const minY = roiEnabled && roi ? Math.floor(roi.y * h) : 0;
+        const maxY = roiEnabled && roi ? Math.ceil((roi.y + roi.h) * h) : h;
+
+        let diffPixels = 0;
+        let regionPixels = 0;
+        const colorThreshold = 75 - sensitivity;
+
+        for (let y = minY; y < maxY; y++) {
+          for (let x = minX; x < maxX; x++) {
+            const idx = (y * w + x) * 4;
+            const rDiff = Math.abs(current[idx] - this.prevFrame[idx]);
+            const gDiff = Math.abs(current[idx + 1] - this.prevFrame[idx + 1]);
+            const bDiff = Math.abs(current[idx + 2] - this.prevFrame[idx + 2]);
+            regionPixels++;
+            if ((rDiff + gDiff + bDiff) / 3 > colorThreshold) diffPixels++;
+          }
+        }
+
+        this.prevFrame = new Uint8ClampedArray(current);
+        if (regionPixels === 0) return { detected: false, percent: 0 };
+        const percent = (diffPixels / regionPixels) * 100;
+
+        if (percent > 4) {
+          const now = Date.now();
+          if (now - this.lastTriggeredAt > cooldownMs) {
+            this.lastTriggeredAt = now;
+            return { detected: true, percent };
+          }
+        }
+        return { detected: false, percent };
+      }
+    }
+
+    // ==================== 5. DETEKSI ORANG AI (COCO-SSD) ====================
+    class AIPersonDetector {
+      constructor(onStatusChange) {
+        this.model = null;
+        this.status = 'idle';
+        this.onStatusChange = onStatusChange;
+      }
+
+      setStatus(status, message = '') {
+        this.status = status;
+        this.onStatusChange?.(status, message);
+      }
+
+      loadScript(src) {
+        return new Promise((resolve, reject) => {
+          if (document.querySelector(`script[src="${src}"]`)) return resolve();
+          const s = document.createElement('script');
+          s.src = src;
+          s.async = true;
+          s.onload = resolve;
+          s.onerror = () => reject(new Error(`Gagal memuat ${src}`));
+          document.head.appendChild(s);
+        });
+      }
+
+      async loadModel() {
+        if (this.model) {
+          this.setStatus('ready', 'AI: Aktif (COCO-SSD)');
+          return true;
+        }
+        if (!navigator.onLine && typeof window.cocoSsd === 'undefined') {
+          this.setStatus('offline', 'AI Offline: butuh internet saat unduh pertama');
+          return false;
+        }
+        this.setStatus('loading', 'AI: Memuat model...');
+        try {
+          if (typeof window.tf === 'undefined') {
+            await this.loadScript('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js');
+          }
+          if (typeof window.cocoSsd === 'undefined') {
+            await this.loadScript('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js');
+          }
+          this.model = await window.cocoSsd.load({ base: 'lite_mobilenet_v2' });
+          this.setStatus('ready', 'AI: Aktif (COCO-SSD)');
+          return true;
+        } catch {
+          this.setStatus(
+            navigator.onLine ? 'error' : 'offline',
+            navigator.onLine ? 'AI Gagal Dimuat (pakai mode gerakan)' : 'Offline: AI tidak tersedia'
+          );
+          return false;
+        }
+      }
+
+      async detectPersons(videoEl, { roiEnabled = false, roi = null, minScore = 0.5 } = {}) {
+        if (!this.model || !videoEl || videoEl.readyState < 2 || !videoEl.videoWidth) return [];
+        const predictions = await this.model.detect(videoEl, 10, minScore);
+        const vw = videoEl.videoWidth;
+        const vh = videoEl.videoHeight;
+
+        return predictions
+          .filter((p) => p.class === 'person' && p.score >= minScore)
+          .map((p) => {
+            const [x, y, w, h] = p.bbox;
+            return {
+              x: x / vw,
+              y: y / vh,
+              w: w / vw,
+              h: h / vh,
+              cx: (x + w / 2) / vw,
+              cy: (y + h / 2) / vh,
+              score: p.score
+            };
+          })
+          .filter((box) => {
+            if (!roiEnabled || !roi) return true;
+            return box.cx >= roi.x && box.cx <= roi.x + roi.w && box.cy >= roi.y && box.cy <= roi.y + roi.h;
+          });
+      }
+    }
+
+    // ==================== 6. COUNTING LINE & OVERLAY ====================
+    class PeopleCounter {
+      constructor() {
+        this.tracks = [];
+        this.nextTrackId = 1;
+        this.lastLogAt = 0;
+      }
+
+      resetTracks() {
+        this.tracks = [];
+      }
+
+      sideOfLine(px, py, line) {
+        return (line.x2 - line.x1) * (py - line.y1) - (line.y2 - line.y1) * (px - line.x1);
+      }
+
+      update(detections, countingLine, lineEnabled) {
+        const now = Date.now();
+        const maxDist = 0.18;
+        const crossedEvents = [];
+        this.tracks = this.tracks.filter((t) => now - t.lastSeen < 1800);
+        const unmatchedTracks = new Set(this.tracks.map((t) => t.id));
+
+        for (const det of detections) {
+          let bestTrack = null;
+          let bestDist = maxDist;
+          for (const track of this.tracks) {
+            if (!unmatchedTracks.has(track.id)) continue;
+            const d = Math.hypot(det.cx - track.cx, det.cy - track.cy);
+            if (d < bestDist) {
+              bestDist = d;
+              bestTrack = track;
+            }
+          }
+
+          const currentSide = lineEnabled ? this.sideOfLine(det.cx, det.cy, countingLine) : 0;
+          if (bestTrack) {
+            unmatchedTracks.delete(bestTrack.id);
+            const prevSide = bestTrack.lastSide;
+            if (
+              lineEnabled &&
+              !bestTrack.counted &&
+              Math.abs(prevSide) > 0.005 &&
+              Math.abs(currentSide) > 0.005 &&
+              Math.sign(prevSide) !== Math.sign(currentSide)
+            ) {
+              let direction = prevSide < 0 && currentSide > 0 ? 'masuk' : 'keluar';
+              if (countingLine.swapDirection) direction = direction === 'masuk' ? 'keluar' : 'masuk';
+              bestTrack.counted = true;
+              crossedEvents.push({ trackId: bestTrack.id, direction, detection: det });
+            }
+            bestTrack.cx = det.cx;
+            bestTrack.cy = det.cy;
+            bestTrack.box = det;
+            bestTrack.lastSide = currentSide;
+            bestTrack.lastSeen = now;
+          } else {
+            this.tracks.push({
+              id: this.nextTrackId++,
+              cx: det.cx,
+              cy: det.cy,
+              box: det,
+              lastSide: currentSide,
+              counted: false,
+              lastSeen: now
+            });
+          }
+        }
+
+        const hasNewPerson = detections.length > 0 && now - this.lastLogAt > 4000;
+        if (hasNewPerson) this.lastLogAt = now;
+        return { crossedEvents, activeTracks: this.tracks, hasNewPerson };
+      }
+    }
+
+    function drawCameraOverlay(canvas, videoEl, state) {
+      const rect = canvas.getBoundingClientRect();
+      if (canvas.width !== rect.width || canvas.height !== rect.height) {
+        canvas.width = rect.width || 640;
+        canvas.height = rect.height || 360;
+      }
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      if (!videoEl || videoEl.readyState < 2) return;
+
+      if (state.roiEnabled || state.editingMode === 'roi') {
+        const r = state.roi;
+        const rx = r.x * w, ry = r.y * h, rw = r.w * w, rh = r.h * h;
+        ctx.save();
+        ctx.strokeStyle = state.editingMode === 'roi' ? '#f59e0b' : '#22d3ee';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(rx, ry, rw, rh);
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.08)';
+        ctx.fillRect(rx, ry, rw, rh);
+        ctx.setLineDash([]);
+        ctx.fillStyle = state.editingMode === 'roi' ? '#f59e0b' : '#22d3ee';
+        ctx.font = 'bold 12px Segoe UI, sans-serif';
+        ctx.fillText('AREA DETEKSI', rx + 6, ry + 16);
+        if (state.editingMode === 'roi') ctx.fillRect(rx + rw - 10, ry + rh - 10, 12, 12);
+        ctx.restore();
+      }
+
+      if (state.lineEnabled || state.editingMode === 'line') {
+        const l = state.countingLine;
+        const x1 = l.x1 * w, y1 = l.y1 * h, x2 = l.x2 * w, y2 = l.y2 * h;
+        ctx.save();
+        ctx.strokeStyle = state.editingMode === 'line' ? '#f59e0b' : '#38bdf8';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath();
+        ctx.arc(x1, y1, 6, 0, Math.PI * 2);
+        ctx.arc(x2, y2, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+        ctx.fillStyle = '#060d1f';
+        ctx.fillRect(mx - 58, my - 22, 116, 18);
+        ctx.fillStyle = '#22d3ee';
+        ctx.font = 'bold 11px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(l.swapDirection ? 'GARIS HITUNG (⇄)' : 'GARIS HITUNG', mx, my - 9);
+        ctx.restore();
+      }
+
+      if (state.detections && state.detections.length > 0) {
+        ctx.save();
+        state.detections.forEach((d) => {
+          const bx = d.x * w, by = d.y * h, bw = d.w * w, bh = d.h * h;
+          ctx.strokeStyle = '#22c55e';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(bx, by, bw, bh);
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(bx, Math.max(0, by - 20), 92, 20);
+          ctx.fillStyle = '#052e16';
+          ctx.font = 'bold 12px Segoe UI, sans-serif';
+          ctx.fillText(`Orang ${Math.round(d.score * 100)}%`, bx + 5, Math.max(14, by - 6));
+        });
+        ctx.restore();
+      }
+    }
+
+    // ==================== 7. ANALYTICS & CHART.JS ====================
+    const chartInstances = {};
+
+    async function ensureChartJS() {
+      if (typeof window.Chart !== 'undefined') return true;
+      try {
+        await new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
+          s.onload = resolve;
+          s.onerror = reject;
+          document.head.appendChild(s);
+        });
+        return typeof window.Chart !== 'undefined';
+      } catch {
+        return false;
+      }
+    }
+
+    function filterLogsByPreset(logs, preset, customDate = '') {
+      const now = new Date();
+      const todayKey = getDateKey(now.getTime());
+      if (preset === 'today') return logs.filter((l) => l.dateKey === todayKey);
+      if (preset === 'yesterday') {
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        return logs.filter((l) => l.dateKey === getDateKey(y.getTime()));
+      }
+      if (preset === '7days') return logs.filter((l) => (l.timestamp || 0) >= Date.now() - 7 * 86400000);
+      if (preset === '30days') return logs.filter((l) => (l.timestamp || 0) >= Date.now() - 30 * 86400000);
+      if (preset === 'thisMonth') {
+        const ym = todayKey.slice(0, 7);
+        return logs.filter((l) => (l.dateKey || '').startsWith(ym));
+      }
+      if (preset === 'custom' && customDate) return logs.filter((l) => l.dateKey === customDate);
+      return logs;
+    }
+
+    function computeDashboardMetrics(logs, resetOffsetTs = 0) {
+      const todayKey = getDateKey();
+      const todayLogs = logs.filter((l) => l.dateKey === todayKey && (l.timestamp || 0) >= resetOffsetTs);
+      let inCount = 0, outCount = 0, peopleCount = 0;
+      const hourBuckets = new Array(24).fill(0);
+
+      todayLogs.forEach((l) => {
+        hourBuckets[new Date(l.timestamp || Date.now()).getHours()]++;
+        if (l.direction === 'masuk') { inCount++; peopleCount++; }
+        else if (l.direction === 'keluar') { outCount++; peopleCount++; }
+        else if (l.type === 'ai' || l.type === 'counting') { peopleCount++; }
+      });
+
+      let peakHour = -1, peakVal = 0;
+      hourBuckets.forEach((val, h) => {
+        if (val > peakVal) { peakVal = val; peakHour = h; }
+      });
+
+      const weekly = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = getDateKey(d.getTime());
+        weekly.push({
+          key,
+          dayName: d.toLocaleDateString('id-ID', { weekday: 'short' }),
+          count: logs.filter((l) => l.dateKey === key).length
+        });
+      }
+
+      return {
+        peopleToday: peopleCount,
+        inToday: inCount,
+        outToday: outCount,
+        detectionsToday: todayLogs.length,
+        peakHour: peakHour >= 0 ? `${String(peakHour).padStart(2, '0')}:00` : '--:--',
+        peakCount: peakVal,
+        lastActivity: logs[0] || null,
+        weekly
+      };
+    }
+
+    function computeDetailedSummary(filteredLogs) {
+      const hours = new Array(24).fill(0);
+      const byDate = {};
+      let totalIn = 0, totalOut = 0;
+
+      filteredLogs.forEach((l) => {
+        hours[new Date(l.timestamp || Date.now()).getHours()]++;
+        const dk = l.dateKey || getDateKey(l.timestamp);
+        byDate[dk] = (byDate[dk] || 0) + 1;
+        if (l.direction === 'masuk') totalIn++;
+        if (l.direction === 'keluar') totalOut++;
+      });
+
+      let peakH = 0, quietH = 0;
+      if (filteredLogs.length > 0) {
+        let maxV = -1, minV = Infinity;
+        hours.forEach((v, idx) => {
+          if (v > maxV) { maxV = v; peakH = idx; }
+          if (v < minV) { minV = v; quietH = idx; }
+        });
+      }
+
+      let busiestDay = '-', busiestVal = 0;
+      Object.entries(byDate).forEach(([day, count]) => {
+        if (count > busiestVal) { busiestVal = count; busiestDay = day; }
+      });
+
+      const activeDays = Object.keys(byDate).length || 1;
+      return {
+        hours,
+        peakHour: filteredLogs.length ? `${String(peakH).padStart(2, '0')}:00` : '--:--',
+        quietHour: filteredLogs.length ? `${String(quietH).padStart(2, '0')}:00` : '--:--',
+        busiestDay,
+        totalIn,
+        totalOut,
+        avgPerDay: filteredLogs.length ? (filteredLogs.length / activeDays).toFixed(1) : '0'
+      };
+    }
+
+    function upsertChart(id, config) {
+      if (!window.Chart) return;
+      if (chartInstances[id]) {
+        chartInstances[id].data = config.data;
+        chartInstances[id].update();
+        return;
+      }
+      const ctx = document.getElementById(id)?.getContext('2d');
+      if (ctx) chartInstances[id] = new window.Chart(ctx, config);
+    }
+
+    async function renderStatisticsCharts(logsAll, filteredLogs, dateA, dateB) {
+      const ready = await ensureChartJS();
+      const offlineNotice = document.getElementById('chartsOfflineNotice');
+      if (!ready) {
+        offlineNotice?.classList.remove('hidden');
+        return;
+      }
+      offlineNotice?.classList.add('hidden');
+
+      const summary = computeDetailedSummary(filteredLogs);
+      const hourLabels = Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`);
+
+      upsertChart('chartHourly', {
+        type: 'bar',
+        data: {
+          labels: hourLabels,
+          datasets: [{
+            label: 'Aktivitas',
+            data: summary.hours,
+            backgroundColor: 'rgba(34, 211, 238, 0.7)',
+            borderColor: '#22d3ee',
+            borderWidth: 1,
+            borderRadius: 4
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+
+      const dailyLabels = [], dailyCounts = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = getDateKey(d.getTime());
+        dailyLabels.push(d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }));
+        dailyCounts.push(logsAll.filter((l) => l.dateKey === key).length);
+      }
+      upsertChart('chartDaily', {
+        type: 'line',
+        data: {
+          labels: dailyLabels,
+          datasets: [{ label: 'Total Kejadian', data: dailyCounts, borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.2)', fill: true, tension: 0.3 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+
+      const monthLabels = [], monthCounts = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const key = getDateKey(d.getTime());
+        monthLabels.push(key.slice(8, 10));
+        monthCounts.push(logsAll.filter((l) => l.dateKey === key).length);
+      }
+      upsertChart('chartMonthly', {
+        type: 'bar',
+        data: {
+          labels: monthLabels,
+          datasets: [{ label: '30 Hari Terakhir', data: monthCounts, backgroundColor: 'rgba(37, 99, 235, 0.75)', borderRadius: 3 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+
+      const getHourlyForDate = (dk) => {
+        const arr = new Array(24).fill(0);
+        if (!dk) return arr;
+        logsAll.filter((l) => l.dateKey === dk).forEach((l) => {
+          arr[new Date(l.timestamp || Date.now()).getHours()]++;
+        });
+        return arr;
+      };
+      upsertChart('chartCompare', {
+        type: 'line',
+        data: {
+          labels: hourLabels,
+          datasets: [
+            { label: dateA || 'Tanggal A', data: getHourlyForDate(dateA), borderColor: '#22d3ee', tension: 0.25 },
+            { label: dateB || 'Tanggal B', data: getHourlyForDate(dateB), borderColor: '#f59e0b', tension: 0.25 }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+      });
+    }
+
+    // ==================== 8. PWA & NETWORK ====================
+    let deferredPrompt = null;
+    let waitingWorker = null;
+
+    function initPWA() {
+      const btnInstall = document.getElementById('btnInstallApp');
+      const installBadge = document.getElementById('installStatusBadge');
+      const updateBanner = document.getElementById('swUpdateBanner');
+      const btnReloadUpdate = document.getElementById('btnReloadUpdate');
+      const netPill = document.getElementById('networkStatus');
+
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      if (isStandalone) {
+        installBadge?.classList.remove('hidden');
+        btnInstall?.classList.add('hidden');
+      }
+
+      const updateNetwork = () => {
+        if (!netPill) return;
+        if (navigator.onLine) {
+          netPill.textContent = '● Online';
+          netPill.className = 'net-pill online';
+        } else {
+          netPill.textContent = '● Offline (Mode Lokal)';
+          netPill.className = 'net-pill offline';
+        }
+      };
+      window.addEventListener('online', updateNetwork);
+      window.addEventListener('offline', updateNetwork);
+      updateNetwork();
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (!isStandalone) btnInstall?.classList.remove('hidden');
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredPrompt = null;
+        btnInstall?.classList.add('hidden');
+        installBadge?.classList.remove('hidden');
+      });
+
+      const showInstallGuide = () => {
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+        const html = isIOS
+          ? `<p>Untuk memasang <strong>PantauKam</strong> di iPhone/iPad (Safari):</p>
+             <ol style="margin:10px 0 0 18px;line-height:1.8;">
+               <li>Tekan tombol <strong>Share (Bagikan)</strong> di Safari.</li>
+               <li>Pilih <strong>"Add to Home Screen" (Tambah ke Layar Utama)</strong>.</li>
+               <li>Tekan <strong>Add (Tambah)</strong>.</li>
+             </ol>`
+          : `<p>Untuk memasang <strong>PantauKam</strong> sebagai aplikasi:</p>
+             <ol style="margin:10px 0 0 18px;line-height:1.8;">
+               <li>Pastikan halaman dibuka lewat <strong>HTTPS</strong> atau <strong>localhost</strong>.</li>
+               <li>Tekan menu browser (⋮) di pojok kanan atas Chrome/Edge.</li>
+               <li>Pilih <strong>Install App</strong> atau <strong>Add to Home Screen</strong>.</li>
+             </ol>
+             <p class="muted-note" style="margin-top:10px;">Catatan: Instalasi penuh PWA offline membutuhkan file <code>manifest.webmanifest</code> dan <code>sw.js</code> di folder yang sama.</p>`;
+        openModal('Panduan Pasang Aplikasi PantauKam', html);
+      };
+
+      btnInstall?.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          await deferredPrompt.userChoice;
+          deferredPrompt = null;
+        } else {
+          showInstallGuide();
+        }
+      });
+
+      document.getElementById('btnShowInstallGuide')?.addEventListener('click', () => {
+        if (deferredPrompt) btnInstall.click();
+        else showInstallGuide();
+      });
+
+      // Daftarkan sw.js secara aman hanya jika file sw.js tersedia di server
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        fetch('./sw.js', { method: 'HEAD' })
+          .then((res) => {
+            if (!res.ok) return null;
+            return navigator.serviceWorker.register('./sw.js');
+          })
+          .then((reg) => {
+            if (!reg) return;
+            if (reg.waiting) {
+              waitingWorker = reg.waiting;
+              updateBanner?.classList.remove('hidden');
+            }
+            reg.addEventListener('updatefound', () => {
+              const nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  waitingWorker = nw;
+                  updateBanner?.classList.remove('hidden');
+                }
+              });
+            });
+          })
+          .catch(() => {});
+      }
+
+      btnReloadUpdate?.addEventListener('click', () => {
+        if (waitingWorker) waitingWorker.postMessage({ type: 'SKIP_WAITING' });
+        else window.location.reload();
+      });
+    }
+
+    // ==================== 9. PENGENDALI UTAMA APLIKASI ====================
+    let settings = getSettings();
+    let allLogs = [];
+    let cameraProfiles = [];
+    let currentPage = 'dashboard';
+    let sessionIn = 0;
+    let sessionOut = 0;
+    let statsResetOffsetTs = Number(localStorage.getItem('pantaukam_stats_offset') || '0');
+
+    let editingMode = null;
+    let dragState = null;
+    let detectTimer = null;
+    let aiRunning = false;
+    let latestDetections = [];
+    let cameraActivatedAt = 0;
+
+    let calDate = new Date();
+    let selectedCalDateKey = getDateKey();
+    let selectedLogIds = new Set();
+
+    const videoEl = document.getElementById('videoFeed');
+    const overlayCanvas = document.getElementById('overlayCanvas');
+    const motionCanvas = document.getElementById('motionCanvas');
+    const snapCanvas = document.getElementById('snapCanvas');
+
+    const motionDetector = new MotionDetector(motionCanvas);
+    const peopleCounter = new PeopleCounter();
+    const aiDetector = new AIPersonDetector((_, msg) => {
+      const badge = document.getElementById('aiStatusBadge');
+      if (badge) badge.innerText = msg || 'AI: Nonaktif';
+    });
+
+    const cameraManager = new CameraManager({
+      videoEl,
+      onStatusChange: handleCameraStatusChange,
+      onRecordUpdate: handleRecordUpdate,
+      onError: (msg) => showCameraAlert(msg)
+    });
+
+    const PAGE_META = {
+      dashboard: ['Dashboard', 'Ringkasan pemantauan aktivitas terkini'],
+      monitoring: ['Monitoring Kamera', 'Pemantauan langsung, AI, garis hitung & rekaman'],
+      history: ['Riwayat Aktivitas', 'Daftar kejadian, foto bukti & filter pencarian'],
+      statistics: ['Statistik', 'Grafik keramaian per jam, harian & bulanan'],
+      calendar: ['Kalender Aktivitas', 'Jelajahi catatan aktivitas berdasarkan tanggal'],
+      settings: ['Pengaturan', 'Konfigurasi deteksi, kamera, privasi & backup']
+    };
+
+    async function init() {
+      applyTheme(settings.theme);
+      await openDatabase();
+      const mig = await migrateLegacyLogsIfNeeded();
+      if (mig.migrated > 0) showToast(`${mig.migrated} catatan lama berhasil dipindahkan ke IndexedDB.`, 'Migrasi Data');
+      if (settings.retentionDays > 0) await pruneOldLogs(settings.retentionDays);
+
+      allLogs = await getAllLogs();
+      cameraProfiles = await getCameraProfiles();
+
+      setupNavigation();
+      setupMonitoringControls();
+      setupOverlayEditor();
+      setupHistoryControls();
+      setupStatisticsControls();
+      setupCalendarControls();
+      setupSettingsControls();
+      setupModalAndNotifs();
+      initPWA();
+
+      await cameraManager.checkBrowserPermission();
+      await refreshDeviceList();
+      await refreshNotificationUI();
+      await refreshRecordingsList();
+
+      syncSettingsToUI();
+      updatePrivacyUI();
+      refreshAllViews();
+
+      setInterval(() => {
+        const hudClock = document.getElementById('hudClock');
+        if (hudClock) hudClock.innerText = new Date().toLocaleTimeString('id-ID', { hour12: false });
+      }, 1000);
+    }
+
+    function setupNavigation() {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('sidebarBackdrop');
+      const closeMobileSidebar = () => {
+        sidebar.classList.remove('open');
+        backdrop.classList.remove('open');
+      };
+      document.getElementById('btnOpenSidebar').addEventListener('click', () => {
+        sidebar.classList.add('open');
+        backdrop.classList.add('open');
+      });
+      document.getElementById('btnCloseSidebar').addEventListener('click', closeMobileSidebar);
+      backdrop.addEventListener('click', closeMobileSidebar);
+
+      document.querySelectorAll('.nav-item[data-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          navigateTo(btn.dataset.page);
+          closeMobileSidebar();
+        });
+      });
+      document.querySelectorAll('[data-nav]').forEach((btn) => {
+        btn.addEventListener('click', () => navigateTo(btn.dataset.nav));
+      });
+    }
+
+    function navigateTo(page) {
+      currentPage = page;
+      document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
+      document.getElementById(`page-${page}`)?.classList.add('active');
+      document.querySelectorAll('.nav-item').forEach((n) => n.classList.toggle('active', n.dataset.page === page));
+      const [title, sub] = PAGE_META[page] || ['PantauKam', ''];
+      document.getElementById('pageTitle').innerText = title;
+      document.getElementById('pageSubtitle').innerText = sub;
+
+      if (page === 'monitoring' && cameraManager.status === 'active') startDetectionLoop();
+      else if (page !== 'monitoring') stopDetectionLoop();
+
+      if (page === 'statistics') updateStatisticsView();
+      if (page === 'calendar') renderCalendar();
+      if (page === 'history') renderHistoryList();
+      if (page === 'dashboard') renderDashboard();
+    }
+
+    function getActiveCameraLabel() {
+      const sel = document.getElementById('cameraSelect');
+      const devId = cameraManager.activeDeviceId || sel?.value || '';
+      const profile = cameraProfiles.find((p) => p.deviceId === devId);
+      if (profile) return profile.name;
+      const opt = sel?.selectedOptions?.[0];
+      return opt && opt.value ? opt.textContent : 'Kamera Utama';
+    }
+
+    async function refreshDeviceList() {
+      const sel = document.getElementById('cameraSelect');
+      if (!sel) return;
+      const devices = await cameraManager.listDevices();
+      if (devices.length === 0) {
+        sel.innerHTML = '<option value="">Kamera Default</option>';
+        return;
+      }
+      sel.innerHTML = devices
+        .map((d, idx) => {
+          const prof = cameraProfiles.find((p) => p.deviceId === d.deviceId);
+          return `<option value="${d.deviceId}">${prof ? prof.name : d.label || `Kamera ${idx + 1}`}</option>`;
+        })
+        .join('');
+      if (settings.lastCameraId && devices.some((d) => d.deviceId === settings.lastCameraId)) {
+        sel.value = settings.lastCameraId;
+      }
+    }
+
+    function handleCameraStatusChange(status) {
+      const globalBadge = document.getElementById('globalCamBadge');
+      const kpiStatus = document.getElementById('kpiCamStatus');
+      const kpiProfile = document.getElementById('kpiCamProfile');
+      const hudDot = document.getElementById('hudDot');
+      const hudText = document.getElementById('hudStatusText');
+      const placeholder = document.getElementById('videoPlaceholder');
+
+      const btnOpen = document.getElementById('btnOpenCamera');
+      const btnClose = document.getElementById('btnCloseCamera');
+      const btnRec = document.getElementById('btnRecordVideo');
+      const btnManual = document.getElementById('btnManualLog');
+
+      const labels = {
+        active: 'Kamera Aktif',
+        inactive: 'Kamera Tidak Aktif',
+        disconnected: 'Kamera Terputus',
+        blocked: 'Kamera Diblokir',
+        requesting: 'Menunggu Izin...'
+      };
+
+      globalBadge.innerText = labels[status] || status;
+      globalBadge.className = `status-pill ${status === 'disconnected' ? 'blocked' : status}`;
+      kpiStatus.innerText = labels[status] || status;
+      kpiProfile.innerText = status === 'active' ? getActiveCameraLabel() : 'Tidak ada stream aktif';
+
+      if (status === 'active') {
+        videoEl.style.display = 'block';
+        placeholder.style.display = 'none';
+        hudDot.className = 'dot live';
+        hudText.innerText = 'AKTIF & MEMANTAU';
+        btnOpen.disabled = true;
+        btnClose.disabled = false;
+        btnRec.disabled = false;
+        btnManual.disabled = false;
+        cameraActivatedAt = Date.now();
+        motionDetector.reset();
+        peopleCounter.resetTracks();
+        refreshDeviceList();
+        if (currentPage === 'monitoring') startDetectionLoop();
+      } else {
+        videoEl.style.display = 'none';
+        placeholder.style.display = 'block';
+        hudDot.className = 'dot';
+        hudText.innerText = status === 'blocked' ? 'DIBLOKIR' : 'OFFLINE';
+        btnOpen.disabled = settings.privacyMode;
+        btnClose.disabled = true;
+        btnRec.disabled = true;
+        btnManual.disabled = true;
+        stopDetectionLoop();
+        latestDetections = [];
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+      }
+    }
+
+    function handleRecordUpdate({ isRecording, elapsedSec, bytes }) {
+      const badge = document.getElementById('recBadge');
+      const timer = document.getElementById('recTimer');
+      const sizeEl = document.getElementById('recSize');
+      const btnRec = document.getElementById('btnRecordVideo');
+      const hudDot = document.getElementById('hudDot');
+      const hudText = document.getElementById('hudStatusText');
+
+      if (isRecording) {
+        badge.classList.remove('hidden');
+        timer.innerText = `${String(Math.floor(elapsedSec / 60)).padStart(2, '0')}:${String(elapsedSec % 60).padStart(2, '0')}`;
+        sizeEl.innerText = bytes > 1048576 ? `${(bytes / 1048576).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`;
+        btnRec.innerText = '⏹ Stop & Simpan Video';
+        btnRec.className = 'btn btn-danger';
+        hudDot.className = 'dot rec';
+        hudText.innerText = 'MEREKAM';
+      } else {
+        badge.classList.add('hidden');
+        btnRec.innerText = '⏺ Rekam Video';
+        btnRec.className = 'btn btn-warning';
+        if (cameraManager.status === 'active') {
+          hudDot.className = 'dot live';
+          hudText.innerText = 'AKTIF & MEMANTAU';
+        }
+        refreshRecordingsList();
+      }
+    }
+
+    function showCameraAlert(msg) {
+      const el = document.getElementById('cameraAlert');
+      if (!el) return;
+      if (!msg) return el.classList.add('hidden');
+      el.innerText = msg;
+      el.classList.remove('hidden');
+    }
+
+    function setPrivacyMode(enabled) {
+      settings.privacyMode = enabled;
+      saveSettings(settings);
+      if (enabled) cameraManager.close('blocked');
+      else cameraManager.setStatus('inactive');
+      updatePrivacyUI();
+    }
+
+    function updatePrivacyUI() {
+      const banner = document.getElementById('privacyBanner');
+      const btnQuick = document.getElementById('btnPrivacyQuick');
+      const chkSet = document.getElementById('setPrivacyMode');
+      const msg = document.getElementById('placeholderMsg');
+
+      banner.classList.toggle('hidden', !settings.privacyMode);
+      btnQuick.innerText = settings.privacyMode ? '🔓 Buka Blokir' : '🔒 Blokir Kamera';
+      if (chkSet) chkSet.checked = settings.privacyMode;
+      document.getElementById('btnOpenCamera').disabled = settings.privacyMode || cameraManager.status === 'active';
+
+      msg.innerHTML = settings.privacyMode
+        ? '🔒 Kamera <strong>DIBLOKIR</strong> oleh Mode Privasi. Nonaktifkan Mode Privasi untuk membuka kamera.'
+        : 'Kamera sedang ditutup. Tekan <strong>Buka Kamera</strong> untuk mulai memantau.';
+    }
+
+    function setupMonitoringControls() {
+      document.getElementById('btnOpenCamera').addEventListener('click', async () => {
+        showCameraAlert('');
+        const deviceId = document.getElementById('cameraSelect').value || settings.lastCameraId;
+        const ok = await cameraManager.open({ deviceId, quality: settings.cameraQuality, privacyBlocked: settings.privacyMode });
+        if (ok && (settings.detectionMode === 'ai' || settings.detectionMode === 'hybrid')) aiDetector.loadModel();
+      });
+
+      document.getElementById('btnCloseCamera').addEventListener('click', () => cameraManager.close('inactive'));
+
+      document.getElementById('btnFlipCamera').addEventListener('click', async () => {
+        if (settings.privacyMode) return showToast('Nonaktifkan Mode Privasi terlebih dahulu.', 'Kamera Diblokir');
+        await cameraManager.flipCamera(settings.cameraQuality);
+      });
+
+      document.getElementById('cameraSelect').addEventListener('change', async (e) => {
+        settings.lastCameraId = e.target.value;
+        saveSettings(settings);
+        if (cameraManager.status === 'active') await cameraManager.open({ deviceId: e.target.value, quality: settings.cameraQuality });
+      });
+
+      document.getElementById('btnRecordVideo').addEventListener('click', async () => {
+        if (!cameraManager.isRecording) {
+          cameraManager.startRecording(getActiveCameraLabel());
+          showToast('Perekaman video dimulai.', 'REC');
+        } else {
+          const res = await cameraManager.stopRecording();
+          if (res) showToast(`Video disimpan: ${res.fileName}`, 'Rekaman Selesai');
+        }
+      });
+
+      document.getElementById('btnManualLog').addEventListener('click', () => {
+        if (cameraManager.status !== 'active') return;
+        recordEvent({ type: 'manual', desc: 'Dicatat Manual', takePhoto: true });
+      });
+
+      document.getElementById('btnPrivacyQuick').addEventListener('click', () => setPrivacyMode(!settings.privacyMode));
+      document.getElementById('btnDisablePrivacyBanner').addEventListener('click', () => setPrivacyMode(false));
+
+      document.getElementById('btnResetStats').addEventListener('click', () => {
+        openConfirmModal(
+          'Reset Statistik Hitungan?',
+          'Hitungan masuk/keluar sesi & angka dashboard hari ini akan dimulai ulang dari 0. Riwayat foto sebelumnya tetap aman di halaman Riwayat.',
+          () => {
+            sessionIn = 0;
+            sessionOut = 0;
+            statsResetOffsetTs = Date.now();
+            localStorage.setItem('pantaukam_stats_offset', String(statsResetOffsetTs));
+            peopleCounter.resetTracks();
+            updateLiveCountersUI();
+            renderDashboard();
+            showToast('Statistik hitungan telah di-reset.');
+          }
+        );
+      });
+
+      document.getElementById('quickDetectionMode').addEventListener('change', (e) => {
+        settings.detectionMode = e.target.value;
+        saveSettings(settings);
+        syncSettingsToUI();
+        if (settings.detectionMode !== 'motion') aiDetector.loadModel();
+      });
+      document.getElementById('quickSensitivity').addEventListener('input', (e) => {
+        settings.sensitivity = Number(e.target.value);
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      document.getElementById('quickRoiEnabled').addEventListener('change', (e) => {
+        settings.roiEnabled = e.target.checked;
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      document.getElementById('quickLineEnabled').addEventListener('change', (e) => {
+        settings.lineEnabled = e.target.checked;
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      document.getElementById('quickSoundEnabled').addEventListener('change', (e) => {
+        settings.soundEnabled = e.target.checked;
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      document.getElementById('quickAutoPhoto').addEventListener('change', (e) => {
+        settings.autoPhoto = e.target.checked;
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+    }
+
+    function isWithinSchedule() {
+      if (!settings.scheduleEnabled) return true;
+      const now = new Date();
+      const cur = now.getHours() * 60 + now.getMinutes();
+      const [sh, sm] = settings.scheduleStart.split(':').map(Number);
+      const [eh, em] = settings.scheduleEnd.split(':').map(Number);
+      const startMin = sh * 60 + sm, endMin = eh * 60 + em;
+      return startMin <= endMin ? cur >= startMin && cur <= endMin : cur >= startMin || cur <= endMin;
+    }
+
+    function getOverlayState() {
+      return {
+        roiEnabled: settings.roiEnabled,
+        roi: settings.roi,
+        lineEnabled: settings.lineEnabled,
+        countingLine: settings.countingLine,
+        editingMode,
+        detections: latestDetections
+      };
+    }
+
+    function startDetectionLoop() {
+      stopDetectionLoop();
+      detectTimer = setInterval(async () => {
+        if (cameraManager.status !== 'active' || settings.privacyMode) return;
+        if (Date.now() - cameraActivatedAt < 1800) return;
+
+        if (!isWithinSchedule()) {
+          drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+          return;
+        }
+
+        const mode = settings.detectionMode;
+        let motionHit = false;
+
+        if (mode === 'motion' || mode === 'hybrid') {
+          const m = motionDetector.detect(videoEl, {
+            sensitivity: settings.sensitivity,
+            roiEnabled: settings.roiEnabled,
+            roi: settings.roi
+          });
+          if (m.detected) {
+            motionHit = true;
+            if (mode === 'motion') {
+              flashVideoBorder();
+              await recordEvent({ type: 'motion', desc: 'Gerakan Terdeteksi', takePhoto: settings.autoPhoto });
+            }
+          }
+        }
+
+        if ((mode === 'ai' || mode === 'hybrid') && aiDetector.model && !aiRunning) {
+          if (mode === 'ai' || motionHit || latestDetections.length > 0) {
+            aiRunning = true;
+            try {
+              latestDetections = await aiDetector.detectPersons(videoEl, {
+                roiEnabled: settings.roiEnabled,
+                roi: settings.roi
+              });
+              const res = peopleCounter.update(latestDetections, settings.countingLine, settings.lineEnabled);
+
+              if (res.crossedEvents.length > 0) {
+                for (const ev of res.crossedEvents) {
+                  if (ev.direction === 'masuk') sessionIn++;
+                  else sessionOut++;
+                  flashVideoBorder();
+                  await recordEvent({
+                    type: 'counting',
+                    direction: ev.direction,
+                    desc: `Orang Melintas (${ev.direction === 'masuk' ? 'Masuk' : 'Keluar'})`,
+                    takePhoto: settings.autoPhoto
+                  });
+                }
+                updateLiveCountersUI();
+              } else if (res.hasNewPerson) {
+                flashVideoBorder();
+                await recordEvent({
+                  type: 'ai',
+                  desc: `Terdeteksi ${latestDetections.length} Orang (AI)`,
+                  takePhoto: settings.autoPhoto
+                });
+              }
+            } finally {
+              aiRunning = false;
+            }
+          }
+        } else if (mode === 'motion') {
+          latestDetections = [];
+        }
+
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+      }, 260);
+    }
+
+    function stopDetectionLoop() {
+      if (detectTimer) {
+        clearInterval(detectTimer);
+        detectTimer = null;
+      }
+    }
+
+    function flashVideoBorder() {
+      const vc = document.getElementById('videoContainer');
+      vc.classList.add('motion-flash');
+      setTimeout(() => vc.classList.remove('motion-flash'), 800);
+    }
+
+    async function recordEvent({ type, direction = null, desc, takePhoto = true }) {
+      const now = new Date();
+      const ts = now.getTime();
+      const timeStr = now.toLocaleTimeString('id-ID', { hour12: false });
+      const dateStr = now.toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+
+      let image = '';
+      if (takePhoto && videoEl.readyState >= 2) {
+        snapCanvas.width = 360;
+        snapCanvas.height = 202;
+        snapCanvas.getContext('2d').drawImage(videoEl, 0, 0, snapCanvas.width, snapCanvas.height);
+        image = snapCanvas.toDataURL('image/jpeg', 0.65);
+      }
+
+      const cameraName = getActiveCameraLabel();
+      const entry = {
+        id: ts + Math.floor(Math.random() * 100),
+        timestamp: ts,
+        dateKey: getDateKey(ts),
+        time: timeStr,
+        date: dateStr,
+        type,
+        direction,
+        cameraName,
+        desc,
+        image
+      };
+
+      try {
+        await saveLog(entry);
+        allLogs.unshift(entry);
+      } catch (err) {
+        showToast(err.message, 'Peringatan Penyimpanan');
+      }
+
+      if (settings.soundEnabled) playAlarmBeep(settings.volume);
+      await pushActivityNotification({ title: desc, time: timeStr, type: type.toUpperCase(), cameraName, inAppEnabled: settings.inAppNotif });
+      refreshAllViews();
+    }
+
+    function setupOverlayEditor() {
+      const btnROI = document.getElementById('btnEditROI');
+      const btnLine = document.getElementById('btnEditLine');
+      const hint = document.getElementById('editorHint');
+
+      const setEditor = (mode) => {
+        editingMode = editingMode === mode ? null : mode;
+        overlayCanvas.classList.toggle('editing', Boolean(editingMode));
+        btnROI.classList.toggle('btn-warning', editingMode === 'roi');
+        btnLine.classList.toggle('btn-warning', editingMode === 'line');
+
+        if (editingMode === 'roi') {
+          settings.roiEnabled = true;
+          saveSettings(settings);
+          syncSettingsToUI();
+          hint.innerText = 'Mode Edit Area: Seret kotak untuk menggeser, seret pojok kanan-bawah untuk ubah ukuran. Klik lagi untuk selesai.';
+        } else if (editingMode === 'line') {
+          settings.lineEnabled = true;
+          saveSettings(settings);
+          syncSettingsToUI();
+          hint.innerText = 'Mode Edit Garis: Seret titik ujung garis atau tarik area video untuk membuat garis hitung baru.';
+        } else {
+          hint.innerText = 'Tip: Gunakan mode AI atau Hybrid untuk penghitungan orang melintasi garis.';
+        }
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+      };
+
+      btnROI.addEventListener('click', () => setEditor('roi'));
+      btnLine.addEventListener('click', () => setEditor('line'));
+      document.getElementById('btnResetROI').addEventListener('click', () => {
+        settings.roi = { x: 0.15, y: 0.15, w: 0.7, h: 0.7 };
+        saveSettings(settings);
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+      });
+      document.getElementById('btnSwapDirection').addEventListener('click', () => {
+        settings.countingLine.swapDirection = !settings.countingLine.swapDirection;
+        saveSettings(settings);
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+        showToast('Arah Masuk/Keluar pada garis hitung ditukar.');
+      });
+
+      const getNormPos = (e) => {
+        const r = overlayCanvas.getBoundingClientRect();
+        return {
+          x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)),
+          y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))
+        };
+      };
+
+      overlayCanvas.addEventListener('pointerdown', (e) => {
+        if (!editingMode) return;
+        overlayCanvas.setPointerCapture(e.pointerId);
+        const p = getNormPos(e);
+        if (editingMode === 'roi') {
+          const r = settings.roi;
+          const nearCorner = Math.hypot(p.x - (r.x + r.w), p.y - (r.y + r.h)) < 0.08;
+          const inside = p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
+          if (nearCorner) dragState = { kind: 'roi-resize', start: p, orig: { ...r } };
+          else if (inside) dragState = { kind: 'roi-move', start: p, orig: { ...r } };
+          else {
+            settings.roi = { x: p.x, y: p.y, w: 0.05, h: 0.05 };
+            dragState = { kind: 'roi-draw', start: p };
+          }
+        } else if (editingMode === 'line') {
+          const l = settings.countingLine;
+          if (Math.hypot(p.x - l.x1, p.y - l.y1) < 0.07) dragState = { kind: 'line-p1' };
+          else if (Math.hypot(p.x - l.x2, p.y - l.y2) < 0.07) dragState = { kind: 'line-p2' };
+          else {
+            settings.countingLine.x1 = p.x; settings.countingLine.y1 = p.y;
+            settings.countingLine.x2 = p.x; settings.countingLine.y2 = p.y;
+            dragState = { kind: 'line-p2' };
+          }
+        }
+      });
+
+      overlayCanvas.addEventListener('pointermove', (e) => {
+        if (!dragState) return;
+        const p = getNormPos(e);
+        if (dragState.kind === 'roi-move') {
+          settings.roi.x = Math.max(0, Math.min(1 - dragState.orig.w, dragState.orig.x + (p.x - dragState.start.x)));
+          settings.roi.y = Math.max(0, Math.min(1 - dragState.orig.h, dragState.orig.y + (p.y - dragState.start.y)));
+        } else if (dragState.kind === 'roi-resize') {
+          settings.roi.w = Math.max(0.1, Math.min(1 - dragState.orig.x, p.x - dragState.orig.x));
+          settings.roi.h = Math.max(0.1, Math.min(1 - dragState.orig.y, p.y - dragState.orig.y));
+        } else if (dragState.kind === 'roi-draw') {
+          settings.roi.x = Math.min(dragState.start.x, p.x);
+          settings.roi.y = Math.min(dragState.start.y, p.y);
+          settings.roi.w = Math.max(0.1, Math.abs(p.x - dragState.start.x));
+          settings.roi.h = Math.max(0.1, Math.abs(p.y - dragState.start.y));
+        } else if (dragState.kind === 'line-p1') {
+          settings.countingLine.x1 = p.x; settings.countingLine.y1 = p.y;
+        } else if (dragState.kind === 'line-p2') {
+          settings.countingLine.x2 = p.x; settings.countingLine.y2 = p.y;
+        }
+        drawCameraOverlay(overlayCanvas, videoEl, getOverlayState());
+      });
+
+      overlayCanvas.addEventListener('pointerup', () => {
+        if (dragState) {
+          dragState = null;
+          saveSettings(settings);
+        }
+      });
+    }
+
+    function animateNumber(el, target) {
+      if (!el) return;
+      const start = parseInt(el.innerText, 10) || 0;
+      if (start === target) { el.innerText = String(target); return; }
+      const duration = 350, startTime = performance.now();
+      const step = (now) => {
+        const p = Math.min(1, (now - startTime) / duration);
+        el.innerText = String(Math.round(start + (target - start) * p));
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    function updateLiveCountersUI() {
+      document.getElementById('liveCountIn').innerText = sessionIn;
+      document.getElementById('liveCountOut').innerText = sessionOut;
+      document.getElementById('liveCountTotal').innerText = sessionIn + sessionOut;
+    }
+
+    function renderDashboard() {
+      const m = computeDashboardMetrics(allLogs, statsResetOffsetTs);
+      animateNumber(document.getElementById('kpiPeopleToday'), m.peopleToday);
+      animateNumber(document.getElementById('kpiDetectionsToday'), m.detectionsToday);
+      document.getElementById('kpiInOutToday').innerText = `Masuk: ${m.inToday} • Keluar: ${m.outToday}`;
+      document.getElementById('kpiPeakHour').innerText = m.peakHour;
+      document.getElementById('kpiPeakCount').innerText =
+        m.peakCount > 0 ? `${m.peakCount} kejadian pada jam tersebut` : 'Belum ada data hari ini';
+
+      if (m.lastActivity) {
+        document.getElementById('kpiLastActivity').innerText = m.lastActivity.time;
+        document.getElementById('kpiLastDesc').innerText = `${m.lastActivity.date} • ${m.lastActivity.desc}`;
+      } else {
+        document.getElementById('kpiLastActivity').innerText = '--:--:--';
+        document.getElementById('kpiLastDesc').innerText = 'Menunggu aktivitas';
+      }
+
+      const maxWeek = Math.max(1, ...m.weekly.map((w) => w.count));
+      document.getElementById('weeklySummaryBars').innerHTML = m.weekly
+        .map((w) => `
+          <div class="w-bar-col">
+            <div class="w-bar-val">${w.count}</div>
+            <div class="w-bar-track"><div class="w-bar-fill" style="height:${Math.round((w.count / maxWeek) * 100)}%"></div></div>
+            <div class="w-bar-day">${w.dayName}</div>
+          </div>`)
+        .join('');
+
+      const recent = allLogs.slice(0, 5);
+      const recentHtml = recent.length
+        ? recent.map((l) => createMiniLogHTML(l)).join('')
+        : '<div class="empty-state">Belum ada aktivitas tercatat.</div>';
+      document.getElementById('dashboardRecentList').innerHTML = recentHtml;
+      document.getElementById('monitoringMiniLogs').innerHTML = recentHtml;
+    }
+
+    function createMiniLogHTML(l) {
+      const dirTag = l.direction ? `<span class="tag ${l.direction === 'masuk' ? 'in' : 'out'}">${l.direction}</span>` : '';
+      const thumb = l.image
+        ? `<img src="${l.image}" class="log-thumb" alt="Foto" onclick="window._zoomLog('${l.id}')" />`
+        : `<div class="log-thumb" style="display:flex;align-items:center;justify-content:center;color:var(--muted);">📷</div>`;
+      return `
+        <div class="log-card">
+          ${thumb}
+          <div class="log-meta">
+            <div class="log-title">⏰ ${l.time} ${dirTag}</div>
+            <div class="log-sub">${l.desc} • ${l.cameraName || 'Kamera'}</div>
+          </div>
+        </div>`;
+    }
+
+    function getFilteredHistory() {
+      const q = document.getElementById('historySearch').value.trim().toLowerCase();
+      const dateF = document.getElementById('historyDateFilter').value;
+      const typeF = document.getElementById('historyTypeFilter').value;
+      const sort = document.getElementById('historySort').value;
+      let list = allLogs.filter((l) => {
+        if (dateF && l.dateKey !== dateF) return false;
+        if (typeF !== 'all' && l.type !== typeF) return false;
+        if (q && !`${l.desc} ${l.date} ${l.time} ${l.cameraName || ''} ${l.direction || ''}`.toLowerCase().includes(q)) return false;
+        return true;
+      });
+      if (sort === 'oldest') list = [...list].reverse();
+      return list;
+    }
+
+    function renderHistoryList() {
+      const list = getFilteredHistory();
+      const el = document.getElementById('historyTimeline');
+      if (list.length === 0) {
+        el.innerHTML = '<div class="empty-state">Tidak ada catatan yang sesuai filter.</div>';
+        updateSelectedUI();
+        return;
+      }
+      el.innerHTML = list
+        .map((l) => {
+          const checked = selectedLogIds.has(l.id) ? 'checked' : '';
+          const dirTag = l.direction ? `<span class="tag ${l.direction === 'masuk' ? 'in' : 'out'}">${l.direction}</span>` : '';
+          const thumb = l.image
+            ? `<img src="${l.image}" class="log-thumb" alt="Bukti" onclick="window._zoomLog('${l.id}')" />`
+            : `<div class="log-thumb" style="display:flex;align-items:center;justify-content:center;">📷</div>`;
+          return `
+            <div class="log-card">
+              <input type="checkbox" class="log-check" data-id="${l.id}" ${checked} />
+              ${thumb}
+              <div class="log-meta">
+                <div class="log-title">⏰ ${l.time} <span class="tag">${l.type || 'motion'}</span> ${dirTag}</div>
+                <div class="log-sub">${l.date} • ${l.desc} • 📹 ${l.cameraName || '-'}</div>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-sm btn-secondary" onclick="window._detailLog('${l.id}')">Detail</button>
+                <button class="btn btn-sm btn-outline-danger" onclick="window._deleteLog('${l.id}')">🗑</button>
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      el.querySelectorAll('.log-check').forEach((cb) => {
+        cb.addEventListener('change', () => {
+          const id = Number(cb.dataset.id);
+          if (cb.checked) selectedLogIds.add(id);
+          else selectedLogIds.delete(id);
+          updateSelectedUI();
+        });
+      });
+      updateSelectedUI();
+    }
+
+    function updateSelectedUI() {
+      document.getElementById('selectedCount').innerText = selectedLogIds.size;
+      document.getElementById('btnDeleteSelected').disabled = selectedLogIds.size === 0;
+    }
+
+    function setupHistoryControls() {
+      ['historySearch', 'historyDateFilter', 'historyTypeFilter', 'historySort'].forEach((id) => {
+        document.getElementById(id).addEventListener('input', renderHistoryList);
+      });
+      document.getElementById('selectAllLogs').addEventListener('change', (e) => {
+        const visible = getFilteredHistory();
+        if (e.target.checked) visible.forEach((l) => selectedLogIds.add(l.id));
+        else selectedLogIds.clear();
+        renderHistoryList();
+      });
+      document.getElementById('btnDeleteSelected').addEventListener('click', () => {
+        const ids = Array.from(selectedLogIds);
+        openConfirmModal('Hapus Catatan Terpilih?', `Yakin menghapus ${ids.length} catatan terpilih?`, async () => {
+          await deleteLogsByIds(ids);
+          selectedLogIds.clear();
+          allLogs = await getAllLogs();
+          refreshAllViews();
+          showToast(`${ids.length} catatan dihapus.`);
+        });
+      });
+      document.getElementById('btnExportCSV').addEventListener('click', () => {
+        if (!exportLogsToCSV(allLogs)) showToast('Belum ada data untuk di-export.');
+      });
+      document.getElementById('btnClearAllHistory').addEventListener('click', () => {
+        openConfirmModal('Hapus Semua Riwayat?', 'Seluruh foto bukti dan catatan kejadian akan dihapus permanen.', async () => {
+          await clearAllLogs();
+          selectedLogIds.clear();
+          allLogs = [];
+          refreshAllViews();
+          showToast('Semua riwayat dihapus.');
+        });
+      });
+
+      window._zoomLog = (id) => {
+        const item = allLogs.find((l) => String(l.id) === String(id));
+        if (!item?.image) return;
+        openModal(`Foto Bukti — ${item.time}`, `<img src="${item.image}" style="width:100%;border-radius:10px;" /><p style="margin-top:10px;color:var(--muted);">${item.date} • ${item.desc}</p>`);
+      };
+      window._detailLog = (id) => {
+        const item = allLogs.find((l) => String(l.id) === String(id));
+        if (!item) return;
+        openModal(
+          'Detail Kejadian',
+          `${item.image ? `<img src="${item.image}" style="width:100%;border-radius:10px;margin-bottom:12px;" />` : ''}
+           <p><strong>Waktu:</strong> ${item.date}, Jam ${item.time}</p>
+           <p><strong>Jenis Deteksi:</strong> ${item.type || 'motion'}</p>
+           <p><strong>Arah:</strong> ${item.direction || '-'}</p>
+           <p><strong>Kamera:</strong> ${item.cameraName || '-'}</p>
+           <p><strong>Keterangan:</strong> ${item.desc}</p>`
+        );
+      };
+      window._deleteLog = (id) => {
+        openConfirmModal('Hapus Catatan?', 'Catatan ini akan dihapus dari penyimpanan.', async () => {
+          await deleteLogById(Number(id));
+          selectedLogIds.delete(Number(id));
+          allLogs = await getAllLogs();
+          refreshAllViews();
+        });
+      };
+    }
+
+    function setupStatisticsControls() {
+      const presetEl = document.getElementById('statsRangePreset');
+      const customDateEl = document.getElementById('statsCustomDate');
+      const compA = document.getElementById('compareDateA');
+      const compB = document.getElementById('compareDateB');
+
+      const today = getDateKey();
+      const yest = new Date();
+      yest.setDate(yest.getDate() - 1);
+      compA.value = today;
+      compB.value = getDateKey(yest.getTime());
+
+      presetEl.addEventListener('change', () => {
+        customDateEl.classList.toggle('hidden', presetEl.value !== 'custom');
+        updateStatisticsView();
+      });
+      [customDateEl, compA, compB].forEach((el) => el.addEventListener('change', updateStatisticsView));
+    }
+
+    function updateStatisticsView() {
+      const preset = document.getElementById('statsRangePreset').value;
+      const custom = document.getElementById('statsCustomDate').value;
+      const compA = document.getElementById('compareDateA').value;
+      const compB = document.getElementById('compareDateB').value;
+
+      const filtered = filterLogsByPreset(allLogs, preset, custom);
+      const s = computeDetailedSummary(filtered);
+
+      document.getElementById('statPeakHour').innerText = s.peakHour;
+      document.getElementById('statQuietHour').innerText = s.quietHour;
+      document.getElementById('statBusiestDay').innerText = s.busiestDay;
+      document.getElementById('statInOut').innerText = `${s.totalIn} / ${s.totalOut}`;
+      document.getElementById('statAvgPerDay').innerText = s.avgPerDay;
+
+      renderStatisticsCharts(allLogs, filtered, compA, compB);
+    }
+
+    function setupCalendarControls() {
+      document.getElementById('btnPrevMonth').addEventListener('click', () => {
+        calDate.setMonth(calDate.getMonth() - 1);
+        renderCalendar();
+      });
+      document.getElementById('btnNextMonth').addEventListener('click', () => {
+        calDate.setMonth(calDate.getMonth() + 1);
+        renderCalendar();
+      });
+    }
+
+    function renderCalendar() {
+      const y = calDate.getFullYear(), m = calDate.getMonth();
+      document.getElementById('calendarMonthTitle').innerText = calDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+      const firstDay = new Date(y, m, 1).getDay();
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const countByDate = {};
+      allLogs.forEach((l) => {
+        const dk = l.dateKey || getDateKey(l.timestamp);
+        countByDate[dk] = (countByDate[dk] || 0) + 1;
+      });
+
+      const grid = document.getElementById('calendarGrid');
+      let html = '';
+      for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dk = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const c = countByDate[dk] || 0;
+        html += `<button class="cal-day ${dk === selectedCalDateKey ? 'selected' : ''}" data-date="${dk}">
+          <span class="cal-day-num">${d}</span>
+          ${c > 0 ? `<span class="cal-badge">${c}</span>` : ''}
+        </button>`;
+      }
+      grid.innerHTML = html;
+      grid.querySelectorAll('.cal-day[data-date]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          selectedCalDateKey = btn.dataset.date;
+          renderCalendar();
+        });
+      });
+
+      document.getElementById('calendarSelectedTitle').innerText = `Aktivitas Tanggal ${selectedCalDateKey}`;
+      const dayLogs = allLogs.filter((l) => l.dateKey === selectedCalDateKey);
+      document.getElementById('calendarDayEvents').innerHTML = dayLogs.length
+        ? dayLogs.map((l) => createMiniLogHTML(l)).join('')
+        : '<div class="empty-state">Tidak ada aktivitas pada tanggal ini.</div>';
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+    }
+
+    function syncSettingsToUI() {
+      document.getElementById('quickDetectionMode').value = settings.detectionMode;
+      document.getElementById('setDetectionMode').value = settings.detectionMode;
+      document.getElementById('quickSensitivity').value = settings.sensitivity;
+      document.getElementById('quickSensVal').innerText = settings.sensitivity;
+      document.getElementById('setSensitivity').value = settings.sensitivity;
+      document.getElementById('setSensVal').innerText = settings.sensitivity;
+
+      document.getElementById('quickRoiEnabled').checked = settings.roiEnabled;
+      document.getElementById('setRoiEnabled').checked = settings.roiEnabled;
+      document.getElementById('quickLineEnabled').checked = settings.lineEnabled;
+      document.getElementById('setLineEnabled').checked = settings.lineEnabled;
+      document.getElementById('quickSoundEnabled').checked = settings.soundEnabled;
+      document.getElementById('setSoundEnabled').checked = settings.soundEnabled;
+      document.getElementById('quickAutoPhoto').checked = settings.autoPhoto;
+      document.getElementById('setAutoPhoto').checked = settings.autoPhoto;
+
+      document.getElementById('setCameraQuality').value = settings.cameraQuality;
+      document.getElementById('setVolume').value = settings.volume;
+      document.getElementById('setVolVal').innerText = settings.volume;
+      document.getElementById('setInAppNotif').checked = settings.inAppNotif;
+      document.getElementById('setScheduleEnabled').checked = settings.scheduleEnabled;
+      document.getElementById('setScheduleStart').value = settings.scheduleStart;
+      document.getElementById('setScheduleEnd').value = settings.scheduleEnd;
+      document.getElementById('setTheme').value = settings.theme;
+      document.getElementById('setRetentionDays').value = String(settings.retentionDays);
+      document.getElementById('setPrivacyMode').checked = settings.privacyMode;
+
+      const notifStat = document.getElementById('browserNotifStatus');
+      notifStat.innerText = 'Notification' in window ? `Status: ${Notification.permission}` : 'Status: Tidak didukung browser ini';
+    }
+
+    function setupSettingsControls() {
+      const bind = (id, key, isCheckbox = false, extra = null) => {
+        document.getElementById(id).addEventListener('change', (e) => {
+          settings[key] = isCheckbox ? e.target.checked : e.target.value;
+          saveSettings(settings);
+          syncSettingsToUI();
+          extra?.(settings[key]);
+        });
+      };
+
+      bind('setDetectionMode', 'detectionMode', false, (v) => { if (v !== 'motion') aiDetector.loadModel(); });
+      document.getElementById('setSensitivity').addEventListener('input', (e) => {
+        settings.sensitivity = Number(e.target.value);
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      bind('setCameraQuality', 'cameraQuality');
+      bind('setAutoPhoto', 'autoPhoto', true);
+      bind('setRoiEnabled', 'roiEnabled', true);
+      bind('setLineEnabled', 'lineEnabled', true);
+      bind('setSoundEnabled', 'soundEnabled', true);
+      document.getElementById('setVolume').addEventListener('input', (e) => {
+        settings.volume = Number(e.target.value);
+        saveSettings(settings);
+        syncSettingsToUI();
+      });
+      bind('setInAppNotif', 'inAppNotif', true);
+      bind('setScheduleEnabled', 'scheduleEnabled', true);
+      bind('setScheduleStart', 'scheduleStart');
+      bind('setScheduleEnd', 'scheduleEnd');
+      bind('setTheme', 'theme', false, (v) => applyTheme(v));
+      document.getElementById('setRetentionDays').addEventListener('change', async (e) => {
+        settings.retentionDays = Number(e.target.value);
+        saveSettings(settings);
+        if (settings.retentionDays > 0) {
+          const removed = await pruneOldLogs(settings.retentionDays);
+          if (removed > 0) {
+            allLogs = await getAllLogs();
+            refreshAllViews();
+            showToast(`${removed} catatan lama dibersihkan.`);
+          }
+        }
+      });
+      document.getElementById('setPrivacyMode').addEventListener('change', (e) => setPrivacyMode(e.target.checked));
+
+      document.getElementById('btnSaveCameraProfile').addEventListener('click', async () => {
+        const name = document.getElementById('profileNameInput').value.trim();
+        const deviceId = document.getElementById('cameraSelect').value || cameraManager.activeDeviceId;
+        if (!name) return showToast('Masukkan nama kamera terlebih dahulu.');
+        if (!deviceId) return showToast('Pilih perangkat kamera di Monitoring terlebih dahulu.');
+
+        await saveCameraProfile({ deviceId, name, updatedAt: Date.now() });
+        cameraProfiles = await getCameraProfiles();
+        document.getElementById('profileNameInput').value = '';
+        await refreshDeviceList();
+        renderCameraProfiles();
+        showToast(`Profil "${name}" tersimpan.`);
+      });
+
+      document.getElementById('btnRequestBrowserNotif').addEventListener('click', async () => {
+        const perm = await requestBrowserNotificationPermission();
+        syncSettingsToUI();
+        showToast(`Izin notifikasi browser: ${perm}`);
+      });
+
+      document.getElementById('btnBackupJSON').addEventListener('click', () => exportBackupJSON());
+      document.getElementById('btnExportCSVSettings').addEventListener('click', () => exportLogsToCSV(allLogs));
+
+      document.getElementById('inputRestoreJSON').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        openConfirmModal('Pulihkan Data Backup?', 'Data backup JSON akan digabungkan tanpa menduplikasi ID yang sudah ada.', async () => {
+          try {
+            const count = await importBackupJSON(file);
+            settings = getSettings();
+            applyTheme(settings.theme);
+            syncSettingsToUI();
+            allLogs = await getAllLogs();
+            cameraProfiles = await getCameraProfiles();
+            renderCameraProfiles();
+            refreshAllViews();
+            showToast(`${count} catatan baru berhasil dipulihkan.`);
+          } catch (err) {
+            showToast(err.message, 'Gagal Restore');
+          }
+        });
+        e.target.value = '';
+      });
+
+      renderCameraProfiles();
+    }
+
+    function renderCameraProfiles() {
+      const el = document.getElementById('cameraProfilesList');
+      if (!cameraProfiles.length) {
+        el.innerHTML = '<div class="empty-state">Belum ada profil kamera dinamai.</div>';
+        return;
+      }
+      el.innerHTML = cameraProfiles
+        .map((p) => `<div class="profile-item"><span>📹 <strong>${p.name}</strong></span><button class="btn btn-sm btn-secondary" onclick="window._useProfile('${p.deviceId}')">Gunakan</button></div>`)
+        .join('');
+
+      window._useProfile = async (devId) => {
+        settings.lastCameraId = devId;
+        saveSettings(settings);
+        navigateTo('monitoring');
+        document.getElementById('cameraSelect').value = devId;
+        if (!settings.privacyMode) await cameraManager.open({ deviceId: devId, quality: settings.cameraQuality });
+      };
+    }
+
+    async function refreshRecordingsList() {
+      const el = document.getElementById('savedRecordingsList');
+      const recs = await getRecordings();
+      if (!recs.length) {
+        el.innerHTML = '<div class="empty-state">Belum ada rekaman video tersimpan di IndexedDB.</div>';
+        return;
+      }
+      el.innerHTML = recs
+        .map(
+          (r) => `
+          <div class="profile-item">
+            <div><strong>🎬 ${r.fileName}</strong><div class="muted-note">Durasi: ${r.durationSec} dtk • ${(r.size / 1024).toFixed(0)} KB</div></div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-sm btn-primary" onclick="window._dlRec(${r.id})">Unduh</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="window._delRec(${r.id})">Hapus</button>
+            </div>
+          </div>`
+        )
+        .join('');
+
+      window._dlRec = async (id) => {
+        const rec = (await getRecordings()).find((x) => x.id === id);
+        if (!rec?.blob) return;
+        const url = URL.createObjectURL(rec.blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = rec.fileName; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+      };
+      window._delRec = async (id) => {
+        await deleteRecording(id);
+        refreshRecordingsList();
+      };
+    }
+
+    function setupModalAndNotifs() {
+      const drawer = document.getElementById('notifDrawer');
+      document.getElementById('btnNotifPanel').addEventListener('click', () => drawer.classList.toggle('hidden'));
+      document.getElementById('btnCloseNotifDrawer').addEventListener('click', () => drawer.classList.add('hidden'));
+      document.getElementById('btnClearNotifs').addEventListener('click', () => clearAllNotifs());
+      document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+      document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+    }
+
+    function openModal(title, bodyHTML, footerButtons = [{ label: 'Tutup', className: 'btn btn-secondary', onClick: closeModal }]) {
+      document.getElementById('modalTitle').innerText = title;
+      document.getElementById('modalBody').innerHTML = bodyHTML;
+      const footer = document.getElementById('modalFooter');
+      footer.innerHTML = '';
+      footerButtons.forEach((b) => {
+        const btn = document.createElement('button');
+        btn.className = b.className;
+        btn.innerText = b.label;
+        btn.addEventListener('click', () => b.onClick?.());
+        footer.appendChild(btn);
+      });
+      document.getElementById('appModal').classList.remove('hidden');
+    }
+
+    function openConfirmModal(title, message, onConfirm) {
+      openModal(title, `<p>${message}</p>`, [
+        { label: 'Batal', className: 'btn btn-secondary', onClick: closeModal },
+        {
+          label: 'Ya, Lanjutkan',
+          className: 'btn btn-danger',
+          onClick: async () => {
+            closeModal();
+            await onConfirm();
+          }
+        }
+      ]);
+    }
+
+    function closeModal() {
+      document.getElementById('appModal').classList.add('hidden');
+    }
+
+    function refreshAllViews() {
+      renderDashboard();
+      if (currentPage === 'history') renderHistoryList();
+      if (currentPage === 'statistics') updateStatisticsView();
+      if (currentPage === 'calendar') renderCalendar();
+    }
+
+    init();
+  })();
+  </script>
+</body>
+</html>
